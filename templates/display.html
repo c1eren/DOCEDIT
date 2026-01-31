@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./static/output.css" rel="stylesheet">
+    <title>Select Word Fields</title>
+</head>
+<body>
+    <div class="px-[10vw] py-[10vh]" name="form-container">
+        <form enctype="multipart/form-data" action="" method="post">
+            <label for="file">Upload file:</label>
+            <div class="flex gap-1">
+                <input class="border" type="file" id="file" name="file">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <ul>
+                            {% for message in messages %}
+                                <li class="text-red-600">{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                {% endwith %}
+            </div>
+            <br><br>
+            <input class="border" type="submit" value="Upload">
+        </form>
+    </div>
+
+    <br>
+
+    {% if text %}
+    <div class="flex flex-col items-center" name="editor">
+        <h1 class="font-bold">SELECT WORDS TO CHANGE</h1>
+        <br>
+        <div class="flex justify-center" name="page-container">
+            <div 
+            class="
+            w-[210mm] h-[297mm] py-[12.7mm] px-[25.4mm]
+            bg-white shadow-lg border border-gray-300 overflow-hidden
+            " 
+            name="page" >
+                    {% for paragraph in text %}
+                    <div>
+                        {% for word in paragraph.split() %}
+                            <span class="hover:bg-amber-300">{{word}}</span> 
+                        {% endfor %}
+                    </div>
+                    <br>                    
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        <br>
+    </div>
+    
+</body>
+</html>

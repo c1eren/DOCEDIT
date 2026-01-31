@@ -24,10 +24,6 @@ def allowed_file(filename):
 def init_page():
     return '<a href="/upload">Go to upload page</a>'
 
-@app.route("/test")
-def hello_world(text="Upload document"):
-    return render_template('index.html', innertext=text)
-
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_document():
     if request.method == 'POST':
@@ -55,7 +51,18 @@ def upload_document():
             document = Document(source_stream)
             source_stream.close()
 
+             # Extract text from all paragraphs
+            full_text = []
+            for paragraph in document.paragraphs:
+                # words = paragraph.text.split()  # split on whitespace
+                # full_text.extend(words)
+                full_text.append(paragraph.text)
+            # text_content = "\n".join(full_text)
+
+            return render_template('display.html', text=full_text)
+
             # Replace chosen text in paragraph (with styling these are called "Run"s)
+            # TODO Work out how to pull word list from fields.
             for paragraph in document.paragraphs:
                 for run in paragraph.runs:
                     if "Cieren" in run.text:
@@ -65,12 +72,13 @@ def upload_document():
             document.save(target_stream)
             target_stream.seek(0)
 
-            return send_file(
-            target_stream,
-            as_attachment=True,
-            download_name="modified.docx",
-            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+            # This will be returned from download function or page or whatever
+            # return send_file(
+            # target_stream,
+            # as_attachment=True,
+            # download_name="modified.docx",
+            # mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            # )
              
                 
             filename = secure_filename(file.filename)
@@ -81,7 +89,7 @@ def upload_document():
             flash('Accepted filetypes: ' + str(ALLOWED_EXTENSIONS).strip('}{'))
             return redirect(request.url)            
     else:
-        return render_template('index.html')
+        return render_template('display.html')
 
 if __name__ == "__main__":
     app.run(debug=True)
