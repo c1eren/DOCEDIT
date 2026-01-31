@@ -3,14 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./static/output.css" rel="stylesheet">
     <title>Home</title>
 </head>
-<body>
-    {% if innertext %}
-        <h1>{{ innertext }}</h1>
-    {% else %}
-        <h1>Hello, World!</h1>
-    {% endif %}
+<body>    
+    <form enctype="multipart/form-data" action="" method="post">
+        <label for="file">Upload file:</label>
+        <div class="flex gap-1">
+            <input class="border" type="file" id="file" name="file">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul>
+                        {% for message in messages %}
+                            <li class="text-red-600">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+        </div>
+        <br><br>
+        <input class="border" type="submit" value="Upload">
+    </form>
 
+    <!-- <div class="whitespace-pre-wrap">Cieren Edinger
+Heidelberg, VIC 3084
+(+61)493980849
+cierenedinger1@gmail.com
+
+
+linkedin.com/in/cieren-edinger
+https://github.com/c1eren  
+14th January, 2026
+
+
+Dear LOFTS QUARRIES Recruitment Team,
+
+
+My name is Cieren Edinger, I am very interested in the open Customer Service & Transport Coordinator position within the team at LOFTS QUARRIES.
+I recently graduated with high distinction from Swinburne Technical College, located in Hawthorn, with a Diploma of Information Technology. I am beyond eager to enter the workforce and apply my extensive IT, Development, and Customer Service, knowledge and experience in roles such as the transport coordinator position that you posted on SEEK.
+Over the course of the last decade I have developed a strong foundation in interpersonal relationships, within teams, between clients and customers, and beyond. This, in tandem, with the extensive amount of programming and study I have done in the past two years; including a full content management and website build for a council affiliated, item trading community scheme, called Boroondara Hard Rubbish Rehome. 
+
+As a former professional ballet dancer, perfection is part of my nature, and I will settle for nothing less - I always endeavour to exceed expectations.
+
+Joining LOFTS QUARRIES in a customer service capacity is such an exciting opportunity to grow and develop my skills within a respected business (your google reviews look good!). I’m confident that my exceptional communication skills, alongside the sound programming and IT fundamentals I’ve developed through years of hard work, make me a strong fit for the role. If you think so too, please do not hesitate to reach out - I would love to hear more about the position on offer, and would equally love to walk you through some of my own work and personal projects. 
+Thank you kindly for considering my application, I look forward to hearing from you. 
+
+
+Sincerely,
+Cieren Edinger
+</div> -->
+    
 </body>
 </html>
