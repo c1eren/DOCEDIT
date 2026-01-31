@@ -1,7 +1,10 @@
 import os
-from flask import Flask, request, flash, redirect, render_template, url_for
+from io import BytesIO
+from flask import Flask, request, flash, redirect, render_template, send_file
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
+
+from docx import Document
 
 app = Flask(__name__)
 
@@ -48,9 +51,31 @@ def upload_document():
         
         # Check file exists and is allowed
         if file and allowed_file(file.filename):
+            source_stream = BytesIO(file.read())
+            document = Document(source_stream)
+            source_stream.close()
+
+            # Replace chosen text in paragraph (with styling these are called "Run"s)
+            for paragraph in document.paragraphs:
+                for run in paragraph.runs:
+                    if "Cieren" in run.text:
+                        run.text = run.text.replace("Cieren", "ME")
+
+            target_stream = BytesIO()
+            document.save(target_stream)
+            target_stream.seek(0)
+
+            return send_file(
+            target_stream,
+            as_attachment=True,
+            download_name="modified.docx",
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+             
+                
             filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return '<p>good job</p>'
+            # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            # return '<p>good job</p>'
             # return redirect(url_for('download_file', name=filename))
         else:
             flash('Accepted filetypes: ' + str(ALLOWED_EXTENSIONS).strip('}{'))
