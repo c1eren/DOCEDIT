@@ -36,23 +36,98 @@
         <div class="flex justify-center" name="page-container">
             <div 
             class="
-            w-[210mm] h-[297mm] py-[12.7mm] px-[25.4mm]
-            bg-white shadow-lg border border-gray-300 overflow-hidden
+            max-w-189 w-[90vw] sm:w-[65vw] p-[clamp(1rem,8%,4rem)] text-[clamp(1rem, 5vw, 3rem)]
+            bg-white shadow-lg border border-gray-300 
             " 
-            name="page" >
-                    {% for paragraph in text %}
-                    <div>
-                        {% for word in paragraph.split() %}
-                            <span class="hover:bg-amber-300">{{word}}</span> 
-                        {% endfor %}
-                    </div>
-                    <br>                    
-                    {% endfor %}
-                {% endif %}
+            name="page" id="page" >
+            {% for paragraph in text %}
+            <div>
+                <!-- TODO make id the iterable number to keep track for later editing of original document -->
+                {% for word in paragraph.split() %}
+                <span class="hover:bg-amber-300">{{word}}</span> 
+                {% endfor %}
             </div>
+            <br>                    
+            {% endfor %}
+            {% endif %}
         </div>
-        <br>
     </div>
+    <br>
+</div>
+
+<script>
+    let mouseInPage;
     
+    document.addEventListener("DOMContentLoaded", () => {
+        const page = document.getElementById("page");
+        page.addEventListener("mouseenter", () => {
+            mouseInPage = true;
+        });
+        page.addEventListener("mouseleave", () => {
+            mouseInPage = false;
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (mouseInPage) {
+                const selected = window.getSelection();
+                if (selected && selected.rangeCount > 0) {
+                    const range = selected.getRangeAt(0);
+                    
+                    // Create filler element
+                    const rangeWidth  = range.getBoundingClientRect().width;
+                    const rangeHeight = range.getBoundingClientRect().height;
+                    const newElement = document.createElement("div");
+                    newElement.style.width  = rangeWidth.toString() + "px";
+                    newElement.style.height = rangeHeight.toString() + "px";
+                    newElement.style.border = "red 1px solid";
+                    newElement.style.display = "inline-flex";
+                    
+                    // Grab the parent div
+                    const rootNode = range.commonAncestorContainer;
+
+                    const treeWalker = document.createTreeWalker(
+                        rootNode,
+                        NodeFilter.SHOW_ELEMENT,
+                        {
+                            // Only check spans and look through other tags to see if there are any spans too 
+                            acceptNode(node) {
+                            return node.tagName === 'SPAN'
+                                ? NodeFilter.FILTER_ACCEPT
+                                : NodeFilter.FILTER_SKIP;
+                            }
+                        }
+                    );
+
+                    const firstElement = range.startContainer.parentElement;
+                    treeWalker.currentNode = firstElement; 
+                    // Start at second range node, will turn the first into the new filler element
+                    let node = treeWalker.nextNode();
+                    console.log(node);
+                    
+                    const nodeList = [];
+
+                    while (node) {
+                        if (range.intersectsNode(node)) {
+                            nodeList.push(node);
+                        } else {
+                            break;
+                        }
+                        node = treeWalker.nextNode();
+                    }
+
+                    nodeList.forEach(span => {
+                        span.remove();
+                    });
+                    firstElement.replaceWith(newElement);
+                }
+                
+            }
+        });
+    });
+    
+    
+</script>
+
 </body>
 </html>
+<!-- w-[210mm] h-[297mm] py-[12.7mm] px-[25.4mm] -->
