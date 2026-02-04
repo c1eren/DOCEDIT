@@ -38,10 +38,12 @@
             <div class="flex justify-center" name="page-container">
                 <div 
                 class="
+                relative
                 max-w-189 w-[90vw] sm:w-[65vw] p-[clamp(1rem,5vw,4rem)] text-[clamp(1rem,1vw,2rem)]
                 bg-white shadow-lg border border-gray-300 
                 "
                 name="page" id="page">
+                <div id="dialog-box" class="absolute w-10 h-10 bg-red-300"></div>
                     {% for paragraph in text %}
                     <div class="paragraph" data-index="{{ loop.index0 }}">{{paragraph}}</div>
                     <br>               
@@ -68,12 +70,37 @@
 
 <script>
     let mouseInPage;
+    let selected;
+    let currentData = {};
     
-    // document.addEventListener("DOMContentLoaded", () => {
-    const page = document.getElementById("page");
-    const editSelections = document.getElementById("edit-selections");
     // This is the return array
     const selections = [];
+    /*
+    selections data-shape:
+    {
+        id: crypto.randomUUID(),
+        text: selection.toString(),
+        range: {
+            startOffset: range.startOffset,
+            endOffset: range.endOffset,
+            paragraphIndex: {
+                        startContainer: range.startContainer.parentElement.dataset.index,
+                        endContainer:   range.endContainer.parentElement.dataset.index
+                    }
+        }
+    }
+    */
+    
+    const page = document.getElementById("page");
+    const editSelections = document.getElementById("edit-selections");
+    const dialogBox = document.getElementById("dialog-box");
+
+    dialogBox.onclick = () => {
+        if (Object.keys(currentData).length !== 0) {
+            selections.push(currentData);
+        }
+        console.log(selections);
+    }
 
     if (page) {
         page.addEventListener("mouseenter", () => {
@@ -86,9 +113,11 @@
 
     document.addEventListener("mouseup", () => {
         if (mouseInPage) {
-            const selected = window.getSelection();
+            selected = window.getSelection();
             // If there's no range return
-            if (!selected.rangeCount) return;
+            if (!selected.rangeCount) {
+                return;
+            } 
             const range = selected.getRangeAt(0);
 
              if (!page.contains(range.startContainer) || !page.contains(range.endContainer)) {
@@ -100,8 +129,24 @@
             const selectedText = selected.toString().trim();
             if (!selectedText) return;
 
-            console.log("\"",selectedText,"\"");
-            console.log("range: ", range);
+
+            // console.log("\"",selectedText,"\"");
+            // console.log("range: ", range);
+            // console.log("paragraph index: ", range.commonAncestorContainer.parentElement.dataset.index);
+
+            currentData = {
+                id:                 crypto.randomUUID(),
+                text:               selectedText,
+                range: {
+                    startOffset:    range.startOffset,
+                    endOffset:      range.endOffset,
+                    paragraphIndex: {
+                        startContainer: range.startContainer.parentElement.dataset.index,
+                        endContainer:   range.endContainer.parentElement.dataset.index
+                    }
+                }
+            }
+            // console.log(currentData);
 
             // Make form display element
             const cList = [
@@ -122,7 +167,6 @@
             editSelections.append(field);
         }
         });
-                    
     
 </script>
     

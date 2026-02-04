@@ -7,4 +7,7 @@
     .input-text {
         @apply text-white text-[clamp(1rem,1vw,2rem)] cursor-pointer py-2 px-4 my-2 max-w-full rounded-md bg-emerald-900 hover:bg-emerald-800 active:bg-emerald-900;
     }
+    .card {
+        @apply  border rounded-md p-[clamp(1rem 1vw 4rem)] text-[clamp(1rem 1vw 2rem)] bg-white shadow-lg border-gray-300;
+    }
 }
