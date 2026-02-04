@@ -8,7 +8,7 @@ from docx import Document
 
 app = Flask(__name__)
 
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx'}
+ALLOWED_EXTENSIONS = {'docx'}
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 
 app.secret_key = "dev-secret-key"
@@ -57,9 +57,17 @@ def upload_document():
                 # words = paragraph.text.split()  # split on whitespace
                 # full_text.extend(words)
                 full_text.append(paragraph.text)
-            # text_content = "\n".join(full_text)
+            text_content = " ".join(full_text)
 
             return render_template('display.html', text=full_text)
+            # return render_template('display.html', text=text_content)
+        
+        # Need to POST an array with the fields to edit
+
+
+
+
+
 
             # Replace chosen text in paragraph (with styling these are called "Run"s)
             # TODO Work out how to pull word list from fields.

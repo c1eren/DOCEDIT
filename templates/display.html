@@ -6,128 +6,125 @@
     <link href="./static/output.css" rel="stylesheet">
     <title>Select Word Fields</title>
 </head>
-<body>
-    <div class="px-[10vw] py-[10vh]" name="form-container">
-        <form enctype="multipart/form-data" action="" method="post">
-            <label for="file">Upload file:</label>
-            <div class="flex gap-1">
-                <input class="border" type="file" id="file" name="file">
-                {% with messages = get_flashed_messages() %}
-                    {% if messages %}
-                        <ul>
-                            {% for message in messages %}
-                                <li class="text-red-600">{{ message }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                {% endwith %}
-            </div>
-            <br><br>
-            <input class="border" type="submit" value="Upload">
-        </form>
-    </div>
-
-    <br>
-
-    {% if text %}
-    <div class="flex flex-col items-center" name="editor">
-        <h1 class="font-bold">SELECT WORDS TO CHANGE</h1>
-        <br>
-        <div class="flex justify-center" name="page-container">
-            <div 
-            class="
-            max-w-189 w-[90vw] sm:w-[65vw] p-[clamp(1rem,8%,4rem)] text-[clamp(1rem, 5vw, 3rem)]
-            bg-white shadow-lg border border-gray-300 
-            " 
-            name="page" id="page" >
-            {% for paragraph in text %}
-            <div>
-                <!-- TODO make id the iterable number to keep track for later editing of original document -->
-                {% for word in paragraph.split() %}
-                <span class="hover:bg-amber-300">{{word}}</span> 
-                {% endfor %}
-            </div>
-            <br>                    
-            {% endfor %}
-            {% endif %}
+<body class="bg-orange-50">
+    <div class="px-[10vw] py-[10vh]">
+        <div name="form-container">
+            <form enctype="multipart/form-data" action="" method="post">
+                <div class="flex flex-col gap-1">
+                    <label for="file"><span class="font-bold">Upload .docx</span></label>
+                    <div>
+                        <input class="input-text" type="file" id="file" name="file">
+                        <input class="button-submit" type="submit" value="Upload">
+                    </div>
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            <ul>
+                                {% for message in messages %}
+                                    <li class="text-red-600">{{ message }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </form>
         </div>
+
+        <br>
+
+        {% if text %}
+        <div class="flex flex-col items-center" name="editor">
+            <h3 class="font-bold">SELECT WORDS TO CHANGE</h3>
+            <br>
+            <div class="flex justify-center" name="page-container">
+                <div 
+                class="
+                max-w-189 w-[90vw] sm:w-[65vw] p-[clamp(1rem,5vw,4rem)] text-[clamp(1rem,1vw,2rem)]
+                bg-white shadow-lg border border-gray-300 
+                "
+                name="page" id="page">
+                    {% for paragraph in text %}
+                    <div class="paragraph" data-index="{{ loop.index0 }}">{{paragraph}}</div>
+                    <br>               
+                    {% endfor %}
+                </div>
+            </div>
+            <br>
+            <br>
+            <div class="self-start">
+                <h3 class="font-bold">Selected edit fields</h3>
+                <br>
+                <div id="edit-selections" class="flex flex-col gap-2 sm:grid sm:grid-cols-2"></div>
+            </div>
+            <br>
+            <div class="self-end w-fit h-fit            
+            ">
+                <form class="" method="post">
+                    <input class="button-submit" type="submit" value="Submit">
+                </form>
+            </div>
+        </div>
+        {% endif %}
     </div>
-    <br>
-</div>
 
 <script>
     let mouseInPage;
     
-    document.addEventListener("DOMContentLoaded", () => {
-        const page = document.getElementById("page");
+    // document.addEventListener("DOMContentLoaded", () => {
+    const page = document.getElementById("page");
+    const editSelections = document.getElementById("edit-selections");
+    // This is the return array
+    const selections = [];
+
+    if (page) {
         page.addEventListener("mouseenter", () => {
             mouseInPage = true;
         });
         page.addEventListener("mouseleave", () => {
             mouseInPage = false;
         });
+    }
 
-        document.addEventListener("mouseup", () => {
-            if (mouseInPage) {
-                const selected = window.getSelection();
-                if (selected && selected.rangeCount > 0) {
-                    const range = selected.getRangeAt(0);
-                    
-                    // Create filler element
-                    const rangeWidth  = range.getBoundingClientRect().width;
-                    const rangeHeight = range.getBoundingClientRect().height;
-                    const newElement = document.createElement("div");
-                    newElement.style.width  = rangeWidth.toString() + "px";
-                    newElement.style.height = rangeHeight.toString() + "px";
-                    newElement.style.border = "red 1px solid";
-                    newElement.style.display = "inline-flex";
-                    
-                    // Grab the parent div
-                    const rootNode = range.commonAncestorContainer;
+    document.addEventListener("mouseup", () => {
+        if (mouseInPage) {
+            const selected = window.getSelection();
+            // If there's no range return
+            if (!selected.rangeCount) return;
+            const range = selected.getRangeAt(0);
 
-                    const treeWalker = document.createTreeWalker(
-                        rootNode,
-                        NodeFilter.SHOW_ELEMENT,
-                        {
-                            // Only check spans and look through other tags to see if there are any spans too 
-                            acceptNode(node) {
-                            return node.tagName === 'SPAN'
-                                ? NodeFilter.FILTER_ACCEPT
-                                : NodeFilter.FILTER_SKIP;
-                            }
-                        }
-                    );
-
-                    const firstElement = range.startContainer.parentElement;
-                    treeWalker.currentNode = firstElement; 
-                    // Start at second range node, will turn the first into the new filler element
-                    let node = treeWalker.nextNode();
-                    console.log(node);
-                    
-                    const nodeList = [];
-
-                    while (node) {
-                        if (range.intersectsNode(node)) {
-                            nodeList.push(node);
-                        } else {
-                            break;
-                        }
-                        node = treeWalker.nextNode();
-                    }
-
-                    nodeList.forEach(span => {
-                        span.remove();
-                    });
-                    firstElement.replaceWith(newElement);
-                }
-                
+             if (!page.contains(range.startContainer) || !page.contains(range.endContainer)) {
+                selected.removeAllRanges();
+                return;
             }
+            
+            // If it's just whitespace return
+            const selectedText = selected.toString().trim();
+            if (!selectedText) return;
+
+            console.log("\"",selectedText,"\"");
+            console.log("range: ", range);
+
+            // Make form display element
+            const cList = [
+                "border", 
+                "rounded-md",
+                "p-[clamp(1rem,1vw,4rem)]",
+                "text-[clamp(1rem,1vw,2rem)]", 
+                "bg-white",
+                "shadow-lg",
+                "border-gray-300"
+                ];
+            const field = document.createElement("div");
+            const fieldText = document.createElement("p");
+            // input.name = `selection_${crypto.randomUUID()}`;
+            fieldText.textContent = selectedText;
+            fieldText.classList.add(...cList);
+            field.append(fieldText);
+            editSelections.append(field);
+        }
         });
-    });
-    
+                    
     
 </script>
-
+    
 </body>
 </html>
-<!-- w-[210mm] h-[297mm] py-[12.7mm] px-[25.4mm] -->

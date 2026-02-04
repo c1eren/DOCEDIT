@@ -5,3 +5,4 @@ __pycache__/
 uploads/
 node_modules/
 static/output.css
+dump.txt
