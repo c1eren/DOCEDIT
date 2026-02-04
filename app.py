@@ -30,44 +30,39 @@ def upload_document():
 
         # Check if the post request has the file part
         try:
-            if 'file' not in request.files:
-                flash('No file part')
-                return redirect(request.url)
+            if 'file' in request.files:
+                # Check if file actually submitted
+                # Get file
+                file = request.files['file']
+
+                if file.filename == '':
+                    flash('No file selected')
+                    return redirect(request.url)
+                
+                # Check file exists and is allowed
+                if file and allowed_file(file.filename):
+                    source_stream = BytesIO(file.read())
+                    document = Document(source_stream)
+                    source_stream.close()
+
+                    # Extract text from all paragraphs
+                    full_text = []
+                    for paragraph in document.paragraphs:
+                        # words = paragraph.text.split()  # split on whitespace
+                        # full_text.extend(words)
+                        full_text.append(paragraph.text)
+                    text_content = " ".join(full_text)
+
+                    return render_template('display.html', text=full_text)
+                    # return render_template('display.html', text=text_content)
+
         except RequestEntityTooLarge:
             flash('Maximum filesize: ' + str(app.config['MAX_CONTENT_LENGTH'] / (1000 * 1000)) + ' MB' )
             return redirect(request.url)
         
-        # Get file
-        file = request.files['file']
 
-        # Check if file actually submitted
-        if file.filename == '':
-            flash('No file selected')
-            return redirect(request.url)
-        
-        # Check file exists and is allowed
-        if file and allowed_file(file.filename):
-            source_stream = BytesIO(file.read())
-            document = Document(source_stream)
-            source_stream.close()
-
-             # Extract text from all paragraphs
-            full_text = []
-            for paragraph in document.paragraphs:
-                # words = paragraph.text.split()  # split on whitespace
-                # full_text.extend(words)
-                full_text.append(paragraph.text)
-            text_content = " ".join(full_text)
-
-            return render_template('display.html', text=full_text)
-            # return render_template('display.html', text=text_content)
         
         # Need to POST an array with the fields to edit
-
-
-
-
-
 
             # Replace chosen text in paragraph (with styling these are called "Run"s)
             # TODO Work out how to pull word list from fields.
