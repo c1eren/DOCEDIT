@@ -13,8 +13,6 @@
 }
 
 dialog {
-  /* position: fixed; */
-  margin: 0;
   display: none;
 }
 dialog[open] {

@@ -66,7 +66,15 @@
     </div>
     
     <dialog id= dialog-box closedby= any  
-    class="border flex rounded-md p-[clamp(1rem,1vw,4rem)] text-[clamp(1rem,1vw,2rem)] bg-white shadow-lg border-gray-300" >
+    class="
+    border flex 
+    rounded-md 
+    mr-[8vw]
+    p-[clamp(1rem,1vw,4rem)] 
+    text-[clamp(1rem,1vw,2rem)] 
+    bg-white shadow-lg border-gray-300
+    "
+    >
        <div class="flex flex-col sm:flex-row gap-1 sm:divide-x-2 divide-gray-300">
            <div class="flex flex-wrap whitespace-pre-wrap pr-2 items-center">
                <p>Make: </p>
@@ -194,8 +202,9 @@
             }
 
             const rangeBounding = range.getBoundingClientRect();
-            dialogBox.style.top = `${rangeBounding.bottom + window.scrollY}px`;
+            dialogBox.style.top  = `${rangeBounding.bottom + window.scrollY}px`;
             dialogBox.style.left = `${rangeBounding.left + window.scrollX}px`;
+            // dialogBox.style.top = `${Math.min(Math.max((rangeBounding.bottom + window.scrollY), 0), window.innerWidth - dialogBounding.width)}px`;
             dialogText.textContent = selectedText;
             dialogBox.show();           
         }
