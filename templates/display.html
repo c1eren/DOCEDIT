@@ -33,7 +33,7 @@
 
         {% if text %}
         <div class="flex flex-col items-center" name="editor">
-            <h3 class="font-bold">SELECT WORDS TO CHANGE</h3>
+            <h3 class="font-bold">Select text to add to template</h3>
             <br>
             <div class="flex justify-center" name="page-container">
                 <div class="
@@ -49,18 +49,21 @@
             </div>
             <br>
             <br>
-            <div class="self-start">
+            <div class="self-start w-full">
                 <h3 class="font-bold">Selected edit fields</h3>
                 <br>
-                <div id="edit-selections" class="flex flex-col gap-2 sm:grid sm:grid-cols-2"></div>
-            </div>
+                <form class="w-full" method="post" id="edit-form">
+                    <div class="flex flex-col gap-4">
+                        <div id="edit-selections" class="flex flex-col gap-2 sm:grid sm:grid-cols-2"></div>
+                        <input type="hidden" name="selections" id="selections-input">
+                        <button class="button-submit self-end" type="submit" value="Submit">Submit</button>
+
+                    </div>
+                </div>
+            </form>
             <br>
             <div class="self-end w-fit h-fit            
             ">
-                <form class="" method="post" id="edit-form">
-                    <input type="hidden" name="selections" id="selections-input">
-                    <input class="button-submit" type="submit" value="Submit">
-                </form>
             </div>
         </div>
         {% endif %}
@@ -76,20 +79,51 @@
     bg-white shadow-lg border-gray-300
     "
     >
-       <div class="flex flex-col sm:flex-row gap-1 sm:divide-x-2 divide-gray-300">
-           <div class="flex flex-wrap whitespace-pre-wrap pr-2 items-center">
-               <p>Make: </p>
-               <span id="dialog-text" class="dialog-text italic"></span>
-               <p> a field?</p>
-           </div>
-           <button id="dialog-button" class="button-submit self-end sm:self-center ml-2 whitespace-pre h-fit outline-none">Do it</button>
-       </div>
+        <form method="dialog">
+            <div class="flex flex-col gap-1 sm:divide-y-2 divide-gray-300">
+                <div class="flex flex-wrap whitespace-pre-wrap pb-2 items-center">
+                    <p>Make: </p>
+                    <span id="dialog-text" class="dialog-text italic"></span>
+                    <p> a field?</p>
+                </div>
+                <div class="flex gap-2 mt-2">
+                    <input class="indent-[5%]" required placeholder="Enter field placeholder" name="pHolder" id="placeholderInputField">
+                    <button id="dialog-button" class="button-submit self-end sm:self-center whitespace-pre h-fit outline-none" value="default">Do it</button>
+                </div>
+            </div>            
+        </form>
     </dialog>
+
+    <template id="selection-template">
+        <div class="selection-field">
+            <div class="flex">
+                <h5 class="pHolderText 
+                flex-1">
+                    TESTING HERE
+                </h5>
+                <div
+                    class="cancel-button
+                    select-none text-red-400 hover:text-red-500 
+                    cursor-pointer 
+                    w-[clamp(1rem,1vw,2rem)] text-[clamp(1rem,1vw,2rem)] 
+                    grid place-items-center
+                    " 
+                    style="aspect-ratio: 1 / 1;">
+                    ✘
+                </div>
+            </div>
+            <p class="currentDataText 
+            border rounded-md p-[clamp(2rem,2vw,4rem)] text-[clamp(1rem,1vw,2rem)] 
+            bg-white shadow-lg border-gray-300
+            "></p>
+        </div>
+    </template>
 
 <script>
     let mouseInPage;
     let selected;
     let currentData = {};
+
     // This is the return array
     const selections = [];
 
@@ -114,47 +148,39 @@
     const dialogBox       = document.getElementById("dialog-box");
     const dialogButton    = document.getElementById("dialog-button");
     const dialogText      = document.getElementById("dialog-text");
+    const pIField         = document.getElementById("placeholderInputField");
     const editForm        = document.getElementById("edit-form");
     const selectionsInput = document.getElementById("selections-input");
-    
-    dialogButton.onclick = () => {
-        if (Object.keys(currentData).length !== 0) {
-            selections.push(currentData);
-             // Make form display element
-             const cList = [
-                "border", 
-                "rounded-md",
-                "p-[clamp(2rem,2vw,4rem)]",
-                "text-[clamp(1rem,1vw,2rem)]", 
-                "bg-white",
-                "shadow-lg",
-                "border-gray-300"
-            ];
 
-            const closeButt = document.createElement("div");
-            closeButt.classList.add("select-none","absolute","top-[1vw]","right-[1vw]","text-red-400","hover:text-red-500","cursor-pointer","w-[clamp(1rem,1vw,2rem)]","text-[clamp(1rem,1vw,2rem)]","grid","place-items-center");
-            closeButt.style.aspectRatio = "1/1";
-            closeButt.textContent = '✘';
+    const tpl = document.getElementById("selection-template");
+    
+    dialogBox.onsubmit = () => {
+        if (Object.keys(currentData).length !== 0) {
+            currentData.placeholder = `$$${pIField.value}$$`;
+            selections.push(currentData);
+
+            // Clone template and change fields, I just did this for readability
+            const node = tpl.content.cloneNode(true);
+
+            node.querySelector(".pHolderText").textContent = pIField.value;
+            node.querySelector(".currentDataText").textContent = currentData.text;
+
+            // Save the id of currentData here so it can be targeted by the cancel button later
             const sKey = currentData.id;
+            const closeButt = node.querySelector(".cancel-button");
+
             closeButt.addEventListener("click", () => {
                 for (let i = 0; i < selections.length; ++i) {
                     if (selections.at(i).id === sKey) {
                         selections.splice(i, 1);
                         closeButt.closest(".selection-field")?.remove();
                     }
-                }                    
+                }
             });
 
-            const fieldText = document.createElement("p");
-            fieldText.textContent = currentData.text;
-            fieldText.classList.add(...cList);
-
-            const field = document.createElement("div");
-            field.classList.add("selection-field","relative");
-            field.append(fieldText);
-            field.append(closeButt);
-            editSelections.append(field);
+        editSelections.append(node);
         }
+        pIField.value = '';
         currentData = {};
         dialogBox.close();        
     }
@@ -166,12 +192,12 @@
         page.addEventListener("mouseleave", () => {
             mouseInPage = false;
         });
+        editForm.addEventListener("submit", () => {
+            selectionsInput.value = JSON.stringify(selections);
+        });
     }
 
 
-    editForm.addEventListener("submit", () => {
-        selectionsInput.value = JSON.stringify(selections);
-    });
 
     document.addEventListener("mouseup", () => {
         if (mouseInPage) {

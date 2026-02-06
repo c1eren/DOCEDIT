@@ -69,6 +69,9 @@ def upload_document():
         
         if request.form.get('selections'):
             selections = json.loads(request.form['selections'])
+            return f"<pre>{selections}</pre>"
+
+
 
             doc_path = session.get('doc_path')
             if not doc_path:
@@ -85,8 +88,20 @@ def upload_document():
             
             # try:
             document = Document(doc_path)
-            F_text = [p.text for p in document.paragraphs]
-            return render_template('show_fields.html', text=F_text)
+            F_text = []
+            for item in selections:
+                # Each item in the list is a dictionary
+                F_text.append(item['text'])
+            for paragraph in document.paragraphs:
+                for run in paragraph.runs:
+                    for text in F_text:
+                        if text in run.text:
+                            run.text = run.text.replace(text, "$$HERE$$")
+            full_text = []
+            for paragraph in document.paragraphs:
+                full_text.append(paragraph.text)
+            # F_text = [p.text for p in document.paragraphs]
+            return render_template('show_fields.html', text=full_text)
 
             # except FileNotFoundError:
                 # abort(404, description="Document not found") 
