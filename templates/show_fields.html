@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./static/output.css" rel="stylesheet">
+    <title>Show Fields</title>
+</head>
+<body>
+    <div>
+        {% if text %}
+            <div class="flex justify-center" name="page-container">
+                <div class="bg-red-200">
+                    {% for paragraph in text %}
+                    <div class="paragraph" data-index="{{ loop.index0 }}">{{paragraph}}</div>
+                    <br>               
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+</body>
+</html>

@@ -57,7 +57,8 @@
             <br>
             <div class="self-end w-fit h-fit            
             ">
-                <form class="" method="post">
+                <form class="" method="post" id="edit-form">
+                    <input type="hidden" name="selections" id="selections-input">
                     <input class="button-submit" type="submit" value="Submit">
                 </form>
             </div>
@@ -108,12 +109,14 @@
     }
     */
     
-    const page           = document.getElementById("page");
-    const editSelections = document.getElementById("edit-selections");
-    const dialogBox      = document.getElementById("dialog-box");
-    const dialogButton   = document.getElementById("dialog-button");
-    const dialogText     = document.getElementById("dialog-text");
-
+    const page            = document.getElementById("page");
+    const editSelections  = document.getElementById("edit-selections");
+    const dialogBox       = document.getElementById("dialog-box");
+    const dialogButton    = document.getElementById("dialog-button");
+    const dialogText      = document.getElementById("dialog-text");
+    const editForm        = document.getElementById("edit-form");
+    const selectionsInput = document.getElementById("selections-input");
+    
     dialogButton.onclick = () => {
         if (Object.keys(currentData).length !== 0) {
             selections.push(currentData);
@@ -164,6 +167,11 @@
             mouseInPage = false;
         });
     }
+
+
+    editForm.addEventListener("submit", () => {
+        selectionsInput.value = JSON.stringify(selections);
+    });
 
     document.addEventListener("mouseup", () => {
         if (mouseInPage) {
