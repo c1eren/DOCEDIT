@@ -69,9 +69,7 @@ def upload_document():
         
         if request.form.get('selections'):
             selections = json.loads(request.form['selections'])
-            return f"<pre>{selections}</pre>"
-
-
+            # return f"<pre>{selections[0]}</pre>"
 
             doc_path = session.get('doc_path')
             if not doc_path:
@@ -88,18 +86,53 @@ def upload_document():
             
             # try:
             document = Document(doc_path)
-            F_text = []
-            for item in selections:
-                # Each item in the list is a dictionary
-                F_text.append(item['text'])
-            for paragraph in document.paragraphs:
-                for run in paragraph.runs:
-                    for text in F_text:
-                        if text in run.text:
-                            run.text = run.text.replace(text, "$$HERE$$")
+
+            # We're going to march through this char by char and replace exactly our selection, keeping all that formatting crap intact
+            # We, in fact, did not do that 
+            for selection in selections:
+                selText        = "".join(selection['text'].split())
+                pHolderText    = selection['placeholder']
+                # paragraphIndex = int(selection['range']['paragraphIndex']['startContainer'])
+                # startIdx       = selection['sOffsets']['start']
+                # endIdx         = selection['sOffsets']['end']
+
+                for paragraph in document.paragraphs:
+                    for run in paragraph.runs:
+                        stripped_run = []
+                        original_index = []
+                        for index, char in enumerate(run.text):
+                            if not char.isspace():
+                                stripped_run.append(char)
+                                original_index.append(index)
+
+                        stripped_run = "".join(stripped_run)
+                        # Finding the starting char in matching subby
+                        start_stripped = stripped_run.find(selText)
+                        # In a function we'll just return -1
+                        if start_stripped == -1:
+                            continue
+                        start_original = original_index[start_stripped]
+                        end_original = original_index[start_stripped + len(selText) - 1]
+
+                        # Create a new string by combining slices and a new character
+                        run.text = run.text[:start_original] + pHolderText + run.text[end_original + 1:]
+            
             full_text = []
             for paragraph in document.paragraphs:
                 full_text.append(paragraph.text)
+
+            target_stream = BytesIO()
+            document.save(target_stream)
+            target_stream.seek(0)
+
+            # This will be returned from download function or page or whatever
+            return send_file(
+            target_stream,
+            as_attachment=True,
+            download_name="modified.docx",
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+            
             # F_text = [p.text for p in document.paragraphs]
             return render_template('show_fields.html', text=full_text)
 
@@ -137,11 +170,11 @@ def upload_document():
                     if "Cieren" in run.text:
                         run.text = run.text.replace("Cieren", "ME")
 
-            target_stream = BytesIO()
-            document.save(target_stream)
-            target_stream.seek(0)
+            # target_stream = BytesIO()
+            # document.save(target_stream)
+            # target_stream.seek(0)
 
-            # This will be returned from download function or page or whatever
+            # # This will be returned from download function or page or whatever
             # return send_file(
             # target_stream,
             # as_attachment=True,
@@ -150,7 +183,7 @@ def upload_document():
             # )
              
                 
-            filename = secure_filename(file.filename)
+            # filename = secure_filename(file.filename)
             # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             # return '<p>good job</p>'
             # return redirect(url_for('download_file', name=filename))

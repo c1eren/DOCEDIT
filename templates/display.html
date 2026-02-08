@@ -33,7 +33,11 @@
 
         {% if text %}
         <div class="flex flex-col items-center" name="editor">
-            <h3 class="font-bold">Select text to add to template</h3>
+            <div class="flex flex-col gap-1 text-center">
+                <h3 class="font-bold">Select text to add to template</h3>
+                <p class="italic">Note: Replacement calculations are run per paragraph in the backend, so multi-paragraph spanning selections will not render in the final template</p>
+                <small>I'll code either support, or guardrails, when I can be bothered, maybe never - so don't hold your breath</small>
+            </div>
             <br>
             <div class="flex justify-center" name="page-container">
                 <div class="
@@ -96,26 +100,29 @@
 
     <template id="selection-template">
         <div class="selection-field">
-            <div class="flex">
-                <h5 class="pHolderText 
-                flex-1">
-                    TESTING HERE
-                </h5>
-                <div
-                    class="cancel-button
-                    select-none text-red-400 hover:text-red-500 
-                    cursor-pointer 
-                    w-[clamp(1rem,1vw,2rem)] text-[clamp(1rem,1vw,2rem)] 
-                    grid place-items-center
-                    " 
-                    style="aspect-ratio: 1 / 1;">
-                    ✘
+            <div class="p-[clamp(1rem,1vw,2rem)] pb-0 border rounded-md bg-white shadow-lg border-gray-300 flex flex-col">
+                <div class="flex">
+                    <h5 class="pHolderText
+                    font-bold
+                    indent-[clamp(2rem,2vw,4rem)]
+                    flex-1
+                    ">
+                    </h5>
+                    <div
+                        class="cancel-button
+                        select-none text-red-400 hover:text-red-500 
+                        cursor-pointer 
+                        w-[clamp(1rem,1vw,2rem)] text-[clamp(1rem,1vw,2rem)] 
+                        grid place-items-center
+                        " 
+                        style="aspect-ratio: 1 / 1;">
+                        ✘
+                    </div>
                 </div>
+                <p class="currentDataText
+                px-[clamp(2rem,2vw,4rem)] py-[clamp(1rem,1vw,2rem)] text-[clamp(1rem,1vw,2rem)]
+                "></p>
             </div>
-            <p class="currentDataText 
-            border rounded-md p-[clamp(2rem,2vw,4rem)] text-[clamp(1rem,1vw,2rem)] 
-            bg-white shadow-lg border-gray-300
-            "></p>
         </div>
     </template>
 
@@ -140,6 +147,7 @@
                         endContainer:   range.endContainer.parentElement.dataset.index
                     }
         }
+        placeholder: pIField.value
     }
     */
     
@@ -156,7 +164,11 @@
     
     dialogBox.onsubmit = () => {
         if (Object.keys(currentData).length !== 0) {
-            currentData.placeholder = `$$${pIField.value}$$`;
+            // Get text selection length for better placeholder look (-4 for the $$ bookends)
+            // const textLen = (currentData.text.length) - 4;
+            // const halfLen = Math.floor(textLen / 2);
+            // currentData.placeholder = `$$${'_'.repeat(halfLen)}${pIField.value}${'_'.repeat(halfLen)}$$`;
+            currentData.placeholder = ` $$${pIField.value}$$ `;
             selections.push(currentData);
 
             // Clone template and change fields, I just did this for readability
@@ -222,6 +234,9 @@
             // console.log("range: ", range);
             // console.log("paragraph index: ", range.commonAncestorContainer.parentElement.dataset.index);
 
+            const selectionOffsets = getSelectionOffsets(range.startContainer.textContent, selectedText); 
+            console.log(selectionOffsets);
+
             currentData = {
                 id:                 crypto.randomUUID(),
                 text:               selectedText,
@@ -232,17 +247,39 @@
                         startContainer: range.startContainer.parentElement.dataset.index,
                         endContainer:   range.endContainer.parentElement.dataset.index
                     }
-                }
+                },
+                sOffsets: selectionOffsets
             }
 
             const rangeBounding = range.getBoundingClientRect();
             dialogBox.style.top  = `${rangeBounding.bottom + window.scrollY}px`;
             dialogBox.style.left = `${rangeBounding.left + window.scrollX}px`;
-            // dialogBox.style.top = `${Math.min(Math.max((rangeBounding.bottom + window.scrollY), 0), window.innerWidth - dialogBounding.width)}px`;
             dialogText.textContent = selectedText;
             dialogBox.show();           
         }
     });
+
+    // This just counts ONLY non-whitespace char to get selections starting offset in paragraph
+    function getSelectionOffsets(paragraphText, selectedText) {
+        let normText = paragraphText.replace(/\s/g, '');
+        let normSel = selectedText.replace(/\s/g, '');
+
+        // Find the start index in non-whitespace terms
+        let counter = 0;
+        let startOffset = -1;
+
+        for (let i = 0; i < paragraphText.length; i++) {
+            if (!/\s/.test(paragraphText[i])) {
+                if (normText.slice(counter, counter + normSel.length) === normSel && startOffset === -1) {
+                    startOffset = counter;
+                }
+                counter++;
+            }
+        }
+
+        const endOffset = startOffset + normSel.length;
+        return { start: startOffset, end: endOffset };
+    }
     
 </script>
     
