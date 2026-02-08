@@ -4,16 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="./static/output.css" rel="stylesheet">
-    <title>Select Word Fields</title>
+    <title>Create Template</title>
 </head>
 <body class="bg-orange-50">
     <div class="px-[10vw] py-[10vh]">
         <div name="form-container">
             <form enctype="multipart/form-data" action="" method="post">
                 <div class="flex flex-col gap-1">
-                    <label for="file"><span class="font-bold">Upload .docx</span></label>
                     <div>
-                        <input class="input-text" type="file" id="file" name="file">
+                        <p class="font-bold">Upload
+                            {% for extension in allowed_extensions %}
+                            <span>.{{extension}} ||</span>
+                            {% endfor %}
+                            <small class="font-normal">TODO: other filetypes</small>
+                        </p>
+                    </div>
+                    <div>
+                        <input 
+                        class="input-text
+                        
+                        "  
+                        type="file" id="file-button" name="file" required
+                        {% if allowed_extensions%} 
+                        accept="
+                        {% for extension in allowed_extensions %}
+                        .{{extension}}, 
+                        {% endfor %}
+                        "
+                         {% endif %}
+                        >
                         <input class="button-submit" type="submit" value="Upload">
                     </div>
                     {% with messages = get_flashed_messages() %}
@@ -36,14 +55,12 @@
             <div class="flex flex-col gap-1 text-center">
                 <h3 class="font-bold">Select text to add to template</h3>
                 <p class="italic">Note: Replacement calculations are run per paragraph in the backend, so multi-paragraph spanning selections will not render in the final template</p>
-                <small>I'll code either support, or guardrails, when I can be bothered, maybe never - so don't hold your breath</small>
+                <small>I'll code either support, or guardrails, when I can be bothered/have time, maybe never - so don't hold your breath</small>
             </div>
-            <br>
-            <div class="flex justify-center" name="page-container">
-                <div class="
-                max-w-189 w-[90vw] sm:w-[65vw] p-[clamp(1rem,5vw,4rem)] text-[clamp(1rem,1vw,2rem)]
-                bg-white shadow-lg border border-gray-300 
-                "
+            <br><br>
+            <div class="flex justify-center relative" name="page-container">
+                {% if fileName %}<div class="dialog-text absolute -translate-y-[50%]"><p>{{fileName}}</p></div>{% endif %}
+                <div class="page"
                 name="page" id="page">
                     {% for paragraph in text %}
                     <div class="paragraph" data-index="{{ loop.index0 }}">{{paragraph}}</div>
@@ -100,7 +117,7 @@
 
     <template id="selection-template">
         <div class="selection-field">
-            <div class="p-[clamp(1rem,1vw,2rem)] pb-0 border rounded-md bg-white shadow-lg border-gray-300 flex flex-col">
+            <div class="p-[clamp(1rem,1vw,2rem)]  border rounded-md bg-white shadow-lg border-gray-300 flex flex-col">
                 <div class="flex">
                     <h5 class="pHolderText
                     font-bold
@@ -133,7 +150,6 @@
 
     // This is the return array
     const selections = [];
-
     /*
     selections data-shape:
     {
@@ -168,7 +184,7 @@
             // const textLen = (currentData.text.length) - 4;
             // const halfLen = Math.floor(textLen / 2);
             // currentData.placeholder = `$$${'_'.repeat(halfLen)}${pIField.value}${'_'.repeat(halfLen)}$$`;
-            currentData.placeholder = ` $$${pIField.value}$$ `;
+            currentData.placeholder = ` [--${pIField.value}--] `;
             selections.push(currentData);
 
             // Clone template and change fields, I just did this for readability
@@ -192,6 +208,7 @@
 
         editSelections.append(node);
         }
+        // console.log(selections);
         pIField.value = '';
         currentData = {};
         dialogBox.close();        
@@ -235,7 +252,7 @@
             // console.log("paragraph index: ", range.commonAncestorContainer.parentElement.dataset.index);
 
             const selectionOffsets = getSelectionOffsets(range.startContainer.textContent, selectedText); 
-            console.log(selectionOffsets);
+            // console.log(selectionOffsets);
 
             currentData = {
                 id:                 crypto.randomUUID(),

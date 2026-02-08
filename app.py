@@ -1,5 +1,6 @@
 import os
 from io import BytesIO
+import copy
 from flask import Flask, request, flash, redirect, render_template, send_file, session, abort
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -61,7 +62,7 @@ def upload_document():
                     for paragraph in document.paragraphs:
                         full_text.append(paragraph.text)
 
-                    return render_template('display.html', text=full_text)
+                    return render_template('create_template.html', text=full_text, fileName=file.filename, allowed_extensions=ALLOWED_EXTENSIONS)
 
         except RequestEntityTooLarge:
             flash('Maximum filesize: ' + str(app.config['MAX_CONTENT_LENGTH'] / (1000 * 1000)) + ' MB' )
@@ -88,15 +89,19 @@ def upload_document():
             document = Document(doc_path)
 
             # We're going to march through this char by char and replace exactly our selection, keeping all that formatting crap intact
-            # We, in fact, did not do that 
+            # We, in fact, did not do that
+
+            final_fields = []
             for selection in selections:
                 selText        = "".join(selection['text'].split())
                 pHolderText    = selection['placeholder']
                 # paragraphIndex = int(selection['range']['paragraphIndex']['startContainer'])
                 # startIdx       = selection['sOffsets']['start']
                 # endIdx         = selection['sOffsets']['end']
+                paragraphNum = 0
 
                 for paragraph in document.paragraphs:
+                    paragraphNum += 1
                     for run in paragraph.runs:
                         stripped_run = []
                         original_index = []
@@ -116,25 +121,29 @@ def upload_document():
 
                         # Create a new string by combining slices and a new character
                         run.text = run.text[:start_original] + pHolderText + run.text[end_original + 1:]
-            
+
+                        temp_selection = copy.deepcopy(selection)
+                        temp_selection['range']['paragraphIndex']['startContainer'] = paragraphNum
+                        final_fields.append(temp_selection)
+
             full_text = []
             for paragraph in document.paragraphs:
                 full_text.append(paragraph.text)
 
-            target_stream = BytesIO()
-            document.save(target_stream)
-            target_stream.seek(0)
 
             # This will be returned from download function or page or whatever
-            return send_file(
-            target_stream,
-            as_attachment=True,
-            download_name="modified.docx",
-            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+            # target_stream = BytesIO()
+            # document.save(target_stream)
+            # target_stream.seek(0)
+
+            # return send_file(
+            # target_stream,
+            # as_attachment=True,
+            # download_name="modified.pdf"
+            # )
             
             # F_text = [p.text for p in document.paragraphs]
-            return render_template('show_fields.html', text=full_text)
+            return render_template('show_fields.html', text=full_text, fields=final_fields)
 
             # except FileNotFoundError:
                 # abort(404, description="Document not found") 
@@ -154,44 +163,11 @@ def upload_document():
             # target_stream.seek(0)
             # Extract text from all paragraphs
 
-            return render_template('show_fields.html', text=F_text)
-
-            return render_template('show_fields.html', fields=t)
-    
-        
-
-        
-        # Need to POST an array with the fields to edit
-
-            # Replace chosen text in paragraph (with styling these are called "Run"s)
-            # TODO Work out how to pull word list from fields.
-            for paragraph in document.paragraphs:
-                for run in paragraph.runs:
-                    if "Cieren" in run.text:
-                        run.text = run.text.replace("Cieren", "ME")
-
-            # target_stream = BytesIO()
-            # document.save(target_stream)
-            # target_stream.seek(0)
-
-            # # This will be returned from download function or page or whatever
-            # return send_file(
-            # target_stream,
-            # as_attachment=True,
-            # download_name="modified.docx",
-            # mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            # )
-             
-                
-            # filename = secure_filename(file.filename)
-            # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            # return '<p>good job</p>'
-            # return redirect(url_for('download_file', name=filename))
         else:
             flash('Accepted filetypes: ' + str(ALLOWED_EXTENSIONS).strip('}{'))
             return redirect(request.url)            
     else:
-        return render_template('display.html')
+        return render_template('create_template.html', allowed_extensions=ALLOWED_EXTENSIONS)
 
 if __name__ == "__main__":
     app.run(debug=True)
