@@ -6,3 +6,4 @@ uploads/
 node_modules/
 static/output.css
 dump.txt
+docx_templates/

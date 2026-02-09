@@ -1,5 +1,51 @@
 @import "tailwindcss";
 
+@layer base {
+  /* Headings */
+  h1 { @apply text-4xl font-bold leading-tight; }
+  h2 { @apply text-3xl font-bold leading-snug; }
+  h3 { @apply text-2xl font-semibold leading-snug; }
+  h4 { @apply text-xl font-semibold; }
+  h5 { @apply text-lg font-medium; }
+  h6 { @apply text-base font-medium; }
+
+  /* Paragraphs */
+  p { @apply leading-relaxed text-base; }
+
+  /* Lists */
+  ul, ol { @apply list-inside; }
+  /* li { @apply; } */
+
+  /* Links */
+  a { @apply text-emerald-600 hover:text-emerald-500 underline; }
+
+  /* Images */
+  img { @apply max-w-full h-auto; }
+
+  /* Tables */
+  table { @apply border-collapse w-full; }
+  th, td { @apply border border-gray-300; }
+
+  /* Form elements */
+  input, select, textarea, button {
+    @apply font-sans text-base rounded-md border border-gray-300 focus:outline-none;
+  }
+
+  /* Blockquotes */
+  blockquote { @apply border-l-4 italic; }
+
+  /* Code / pre */
+  code { @apply font-mono text-sm bg-gray-100 rounded; }
+  pre { @apply font-mono text-sm bg-gray-100 rounded overflow-x-auto; }
+
+  /* Horizontal rule */
+  hr { @apply border-t border-gray-300; }
+
+  /* Default body */
+  body { @apply font-sans text-gray-900 bg-orange-50; }
+}
+
+
 @layer components {
     .button-submit {
        @apply select-none text-[clamp(1rem,1vw,2rem)] cursor-pointer shadow-lg rounded-md text-white font-bold py-2 px-4 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-700;

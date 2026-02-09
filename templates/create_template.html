@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="./static/output.css" rel="stylesheet">
-    <title>Create Template</title>
+    <title>DOCEDIT | Create Template</title>
 </head>
 <body class="bg-orange-50">
     <div class="px-[10vw] py-[10vh]">
         <div name="form-container">
-            <form enctype="multipart/form-data" action="" method="post">
+            <form enctype="multipart/form-data" method="post">
+                <input type="hidden" name="action" value="upload">
                 <div class="flex flex-col gap-1">
                     <div>
                         <p class="font-bold">Upload
@@ -22,7 +23,6 @@
                     <div>
                         <input 
                         class="input-text
-                        
                         "  
                         type="file" id="file-button" name="file" required
                         {% if allowed_extensions%} 
@@ -74,6 +74,7 @@
                 <h3 class="font-bold">Selected edit fields</h3>
                 <br>
                 <form class="w-full" method="post" id="edit-form">
+                    <input type="hidden" name="action" value="selections">
                     <div class="flex flex-col gap-4">
                         <div id="edit-selections" class="flex flex-col gap-2 sm:grid sm:grid-cols-2"></div>
                         <input type="hidden" name="selections" id="selections-input">
@@ -101,6 +102,7 @@
     "
     >
         <form method="dialog">
+            
             <div class="flex flex-col gap-1 sm:divide-y-2 divide-gray-300">
                 <div class="flex flex-wrap whitespace-pre-wrap pb-2 items-center">
                     <p>Make: </p>
@@ -121,7 +123,7 @@
                 <div class="flex">
                     <h5 class="pHolderText
                     font-bold
-                    indent-[clamp(2rem,2vw,4rem)]
+                    px-[clamp(2rem,2vw,4rem)]
                     flex-1
                     ">
                     </h5>
@@ -252,7 +254,6 @@
             // console.log("paragraph index: ", range.commonAncestorContainer.parentElement.dataset.index);
 
             const selectionOffsets = getSelectionOffsets(range.startContainer.textContent, selectedText); 
-            // console.log(selectionOffsets);
 
             currentData = {
                 id:                 crypto.randomUUID(),

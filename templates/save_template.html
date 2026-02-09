@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./static/output.css" rel="stylesheet">
+    <title>DOCEDIT | Save Template</title>
+</head>
+<body class="bg-orange-50">
+    <div class="px-[10vw] py-[10vh]">
+        
+        <!-- <div>{{fields}}</div> -->
+        <br>
+
+        {% if text %}
+        <div class="flex flex-col items-center" name="editor">
+            <div class="flex flex-col gap-1 text-center">
+                <h3 class="font-bold">subheader</h3>
+                <p class="italic">subtext</p>
+                <small>sub-subtext</small>
+            </div>
+            <br><br>
+            <div class="flex justify-center relative" name="page-container">
+                {% if fileName %}<div class="dialog-text absolute -translate-y-[50%]"><p>{{fileName}}</p></div>{% endif %}
+                <div class="page"
+                name="page" id="page">
+                    {% for paragraph in text %}
+                    <div class="text-red-300">Paragraph: {{ loop.index0 + 1 }}</div>
+                    <div class="paragraph" data-index="{{ loop.index0 }}">{{paragraph}}</div>
+                    <br>               
+                    {% endfor %}
+                </div>
+            </div>
+            <br>
+            <br>
+            <div class="self-start w-full">
+                <div>
+                    <h3 class="font-bold">Selected edit fields</h3>
+                    <small>Press 'X' to delete from final template</small>
+                </div>
+                <br>
+                {% if fields %}
+                    {% for field in fields %}                        
+                        <div class="selection-field" data-uuid="{{field['uuid']}}">
+                            <div class="p-[clamp(1rem,1vw,2rem)] border rounded-md bg-white shadow-lg border-gray-300 flex flex-col">
+                                <div class="flex">
+                                    <h5 class="pHolderText
+                                    font-bold
+                                    indent-[clamp(2rem,2vw,4rem)]
+                                    flex-1
+                                    ">{{field["field_text"]}}</h5>
+                                    <div
+                                        class="cancel-button
+                                        select-none text-red-400 hover:text-red-500 
+                                        cursor-pointer 
+                                        w-[clamp(1rem,1vw,2rem)] text-[clamp(1rem,1vw,2rem)] 
+                                        grid place-items-center
+                                        " 
+                                        style="aspect-ratio: 1 / 1;">
+                                        ✘
+                                    </div>
+                                </div>
+                                <div class="currentDataText
+                                    px-[clamp(2rem,2vw,4rem)] py-[clamp(1rem,1vw,2rem)] text-[clamp(1rem,1vw,2rem)]
+                                    ">
+                                    <p>Replacing: <span class="font-bold">{{field["text"]}}</span></p>
+                                    <p>At paragraph: <span class="font-bold">{{field['paragraphIndex']}}</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            <br>
+            <form class="w-full" method="post" id="edit-form">
+                <input type="hidden" name="action" value="fields">
+                <div class="flex flex-col gap-4">
+                    <div id="edit-fields" class="flex flex-col gap-2 sm:grid sm:grid-cols-2"></div>
+                    <input type="hidden" name="fields" id="fields-input">
+                    <button class="button-submit self-end" type="submit" value="Submit">Create Template</button>
+
+                </div>
+                </div>
+            </form>
+            <div class="self-end w-fit h-fit            
+            ">
+            </div>
+        </div>
+        {% endif %}
+    </div>
+<script>
+
+    const jsFields    = JSON.parse('{{ fields | tojson | default("[]") | safe }}');
+    const editForm    = document.getElementById("edit-form");
+    const fieldsInput = document.getElementById("fields-input");
+
+    //@ignore
+    document.querySelectorAll('.cancel-button').forEach(el => {
+        el.addEventListener('click', () => {
+            const fieldDiv = el.closest(".selection-field");
+            const fieldId = fieldDiv.dataset.uuid;
+            if (fieldId) {
+                // Remove from array
+                const index = jsFields.findIndex(f => f.uuid === fieldId);
+                if (index !== -1) jsFields.splice(index, 1);
+                // Remove from DOM
+                fieldDiv.remove();
+                console.log(jsFields);
+            }
+        });
+    });
+    
+    editForm.addEventListener("submit", () => {
+        console.log(jsFields);
+        fieldsInput.value = JSON.stringify(jsFields);
+    });
+
+</script>
+</body>
+</html>
