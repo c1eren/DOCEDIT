@@ -210,19 +210,18 @@ def handle_selections(request):
 
         # We're going to march through this char by char and replace exactly our selection, keeping all that formatting crap intact
         # We, in fact, did not do that
-        full_text = []
+        full_text    = []
         final_fields = []
-
 
         for pIndex, paragraph in enumerate(document.paragraphs, start=1):
 
-            preview_text = ""
-            reference_text = ""
+            preview_text    = ""
+            reference_text  = ""
+            temp_selections = []
             
             for run in paragraph.runs:
                 reference_text += run.text
-                preview_text += run.text
-                temp_selections = []
+                preview_text   += run.text
 
             for selection in selections:                
                 selText        = "".join(ch for ch in selection['text'] if not ch.isspace()).lower()
@@ -237,14 +236,12 @@ def handle_selections(request):
                         original_index.append(index)
 
                 stripped_text = "".join(stripped_text).lower()
-                # Finding the starting char in matching subby
+
+                # Gotta find all matches within paragraph text
                 start_stripped = stripped_text.find(selText)
-                # In a function we'll just return -1
-                if start_stripped != -1:
+                while start_stripped != -1:
                     start_original = original_index[start_stripped]
-                    end_original = original_index[start_stripped + len(selText) - 1]
-                    # Create a new string by combining slices and a new character
-                    preview_text = preview_text[:start_original] + pHolderText + preview_text[end_original + 1:]
+                    end_original   = original_index[start_stripped + len(selText) - 1]
 
                     temp_selection = {
                         "uuid": str(uuid.uuid4()),
@@ -252,9 +249,23 @@ def handle_selections(request):
                         "paragraphIndex": pIndex,
                         "index": {"start": start_original, "end": end_original},
                         "field_text": pHolderText
-                        }
+                    }
                     temp_selections.append(temp_selection)
                     final_fields.append(temp_selection)
+
+                    # Replace the matched portion in stripped_text to avoid finding the same one again
+                    stripped_text = stripped_text[:start_stripped] + (" " * len(selText)) + stripped_text[start_stripped + len(selText):]
+                    start_stripped = stripped_text.find(selText)
+
+            temp_selections.sort(key=lambda sel: sel["index"]["start"], reverse=True)
+
+            for sel in temp_selections:
+                start_original = sel['index']['start']
+                end_original   = sel['index']['end']
+                pHolderText    = sel['field_text']
+
+                # Create new string by combining slices and a new character
+                preview_text = preview_text[:start_original] + pHolderText + preview_text[end_original + 1:]
                     
             full_text.append(preview_text)
 
