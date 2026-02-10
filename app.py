@@ -34,12 +34,51 @@ def init_page():
         action = request.form.get('action')
 
         if action == 'docSelect':
-            return f"<div>{action}</div>"
+            filename = request.form['docSelect']
+            if filename:
+                session['selected_template'] = filename
+                return redirect('/create-pdf')  
         
     path = app.config['TEMPLATE_FOLDER']
     filenames = os.listdir(path)
-
     return render_template("template_hub.html", fNames=filenames)
+
+@app.route('/create-pdf', methods=['GET'])
+def create_pdf_page():
+    filename = session.get('selected_template')
+
+    if not filename:
+        abort(400, "No template selected")
+
+    path = os.path.join(app.config['TEMPLATE_FOLDER'], filename)
+
+    if not os.path.isfile(path):
+        abort(404, "Template not found")
+
+    document = Document(path)
+
+    full_text = [p.text for p in document.paragraphs]
+    fieldArr = []
+
+    for paragraph in document.paragraphs:
+        text = paragraph.text
+        start = text.find("[--")
+
+        while start != -1:
+            end = text.find("--]", start)
+            if end == -1:
+                break
+
+            fieldText = text[start:end + 3]
+
+            if fieldText not in fieldArr:
+                fieldArr.append(text[start:end + 3])  # Include the "--]"
+
+            start = text.find("[--", end + 3)
+    
+    return render_template('create_new_pdf.html', text=full_text, filename=filename, fields=fieldArr)
+
+
 
 @app.route('/create-template', methods=['GET', 'POST'])
 def create_template_page():
@@ -262,7 +301,8 @@ def handle_fields(request):
         path = os.path.join(app.config['TEMPLATE_FOLDER'], fName)
         document.save(path)
 
-        return f"<div>{full_text}</div>"
+        return redirect('/')  
+
 
     except KeyError:
         # Missing 'selections' in POST

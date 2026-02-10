@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./static/output.css" rel="stylesheet">
+    <title>DOCEDIT | Create Template</title>
+</head>
+<body class="bg-orange-50">
+    <div class="px-[10vw] py-[10vh]">
+        <div>
+            {% if fields %}
+                <ul>
+                    {% for field in fields %}
+                        <li class="text-red-600">{{ field }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        {% if text %}
+        <div class="flex flex-col items-center" name="editor">
+            <div class="flex flex-col gap-1 text-center">
+                <h3 class="font-bold">Select text to add to template</h3>
+                <p class="italic">Note: Replacement calculations are run per paragraph in the backend, so multi-paragraph spanning selections will not render in the final template</p>
+                <small>I'll code either support, or guardrails, when I can be bothered/have time, maybe never - so don't hold your breath</small>
+            </div>
+            <br><br>
+            <div class="flex justify-center relative" name="page-container">
+                {% if fileName %}<div class="dialog-text absolute -translate-y-[50%]"><p>{{fileName}}</p></div>{% endif %}
+                <div class="page"
+                name="page" id="page">
+                    {% for paragraph in text %}
+                    <div class="paragraph" data-index="{{ loop.index0 }}">{{paragraph}}</div>
+                    <br>               
+                    {% endfor %}
+                </div>
+            </div>
+            <br>
+            <br>
+            <div class="self-start w-full">
+                <h3 class="font-bold">Selected edit fields</h3>
+                <br>
+                <form class="w-full" method="post" id="edit-form">
+                    <input type="hidden" name="action" value="selections">
+                    <div class="flex flex-col gap-4">
+                        <div id="edit-selections" class="flex flex-col gap-2 sm:grid sm:grid-cols-2"></div>
+                        <input type="hidden" name="selections" id="selections-input">
+                        <button class="button-submit self-end" type="submit" value="Submit">Submit</button>
+
+                    </div>
+                </div>
+            </form>
+            <br>
+            <div class="self-end w-fit h-fit            
+            ">
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+</body>
+</html>
