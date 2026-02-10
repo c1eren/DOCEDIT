@@ -12,12 +12,15 @@ from docx import Document
 app = Flask(__name__)
 
 ALLOWED_EXTENSIONS = {'docx'}
-UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
+UPLOAD_FOLDER   = os.path.join(os.getcwd(), "uploads")
+TEMPLATE_FOLDER = os.path.join(os.getcwd(), "docx_templates")
 
 app.secret_key = "dev-secret-key"
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1000 * 1000 #10 MB
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['TEMPLATE_FOLDER'] = TEMPLATE_FOLDER
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['TEMPLATE_FOLDER'], exist_ok=True)
 
 # Might need to save the document temporarily to keep it in memory or something so it can be altered later
 
@@ -49,65 +52,6 @@ def create_template_page():
     else:
         return render_template('create_template.html', allowed_extensions=ALLOWED_EXTENSIONS)
                 
-                    # for paragraph in document.paragraphs:
-                    #     paragraphNum += 1
-                    #     for run in paragraph.runs:
-                    #         stripped_run = []
-                    #         original_index = []
-                    #         for index, char in enumerate(run.text):
-                    #             if not char.isspace():
-                    #                 stripped_run.append(char)
-                    #                 original_index.append(index)
-
-                    #         stripped_run = "".join(stripped_run)
-                    #         # Finding the starting char in matching subby
-                    #         start_stripped = stripped_run.find(selText)
-                    #         # In a function we'll just return -1
-                    #         if start_stripped == -1:
-                    #             continue
-                    #         start_original = original_index[start_stripped]
-                    #         end_original = original_index[start_stripped + len(selText) - 1]
-
-                    #         # Create a new string by combining slices and a new character
-                    #         run.text = run.text[:start_original] + pHolderText + run.text[end_original + 1:]
-
-                    #         temp_selection = {
-                    #             "text": selection['text'],
-                    #             "paragraphIndex": paragraphNum,
-                    #             "index": {"start": start_original, "end": end_original},
-                    #             "field_text": pHolderText
-                    #             }
-                    #         final_fields.append(temp_selection)
-
-                    # for paragraph in document.paragraphs:
-                    #     paragraphNum += 1
-                    #     for run in paragraph.runs:
-                    #         stripped_run = []
-                    #         original_index = []
-                    #         for index, char in enumerate(run.text):
-                    #             if not char.isspace():
-                    #                 stripped_run.append(char)
-                    #                 original_index.append(index)
-
-                    #         stripped_run = "".join(stripped_run)
-                    #         # Finding the starting char in matching subby
-                    #         start_stripped = stripped_run.find(selText)
-                    #         # In a function we'll just return -1
-                    #         if start_stripped == -1:
-                    #             continue
-                    #         start_original = original_index[start_stripped]
-                    #         end_original = original_index[start_stripped + len(selText) - 1]
-
-                    #         # Create a new string by combining slices and a new character
-                    #         run.text = run.text[:start_original] + pHolderText + run.text[end_original + 1:]
-
-                    #         temp_selection = copy.deepcopy(selection)
-                    #         temp_selection['range']['paragraphIndex']['startContainer'] = paragraphNum
-                    #         final_fields.append(temp_selection)
-
-                # for paragraph in document.paragraphs:
-                #     full_text.append(paragraph.text)
-
 
                 # This will be returned from download function or page or whatever
                 # target_stream = BytesIO()
@@ -269,7 +213,7 @@ def handle_selections(request):
                     
             full_text.append(preview_text)
 
-        return render_template('save_template.html', text=full_text, fields=final_fields)
+        return render_template('save_template.html', text=full_text, fields=final_fields, title_placeholder=str(uuid.uuid4()))
     
     except KeyError:
         # Missing 'selections' in POST
@@ -285,37 +229,11 @@ def handle_selections(request):
 def handle_fields(request):
     try:
         fields = json.loads(request.form['fields'])
+        template_name = fields.pop()['templateName']
+        # return f"<div>{fields}</div>"
 
         doc_path = get_current_doc_path()    
         document = Document(doc_path)
-
-        # TODO: Fix all this logic lol
-        
-        # Go through each paragraph 
-        # for pIndex, paragraph in enumerate(document.paragraphs, start=1):
-        #     # Check each field against the run to see if it has a match in there to replace
-        #     for field in fields:
-        #         if field['paragraphIndex'] == str(pIndex):
-        #             for run in paragraph.runs:
-        #                 stripped_run = []
-        #                 original_index = []
-        #                 for index, char in enumerate(run.text):
-        #                     if not char.isspace():
-        #                         stripped_run.append(char)
-        #                         original_index.append(index)
-
-        #                 stripped_run = "".join(stripped_run)
-        #                 # Finding the starting char in matching subby
-        #                 start_stripped = stripped_run.find(field['text'])
-        #                 # In a function we'll just return -1
-        #                 if start_stripped == -1:
-        #                     continue
-        #                 start_original = original_index[start_stripped]
-        #                 end_original = original_index[start_stripped + len(field['text']) - 1]
-
-        #                 # Create a new string by combining slices and a new character
-        #                 run.text = run.text[:start_original] + field['field_text'] + run.text[end_original + 1:]
-        
         
         for pIndex, paragraph in enumerate(document.paragraphs, start=1):
             # Sort fields in reverse based on where they are in paragraph
@@ -361,6 +279,12 @@ def handle_fields(request):
         full_text = []
         for paragraph in document.paragraphs:
             full_text.append(paragraph.text)
+
+        # Save the new template to the template folder (for now, upgrade to db storage in future potentially)
+        fName = secure_filename(template_name + ".docx")
+        path = os.path.join(app.config['TEMPLATE_FOLDER'], fName)
+        document.save(path)
+
         return f"<div>{full_text}</div>"
 
     except KeyError:
@@ -373,7 +297,6 @@ def handle_fields(request):
         app.logger.error(f"Unexpected error in handle_fields: {e}")
         flash("An unexpected error occurred. Please try again.")
         return redirect(request.url)
-
 
 
 if __name__ == "__main__":

@@ -15,11 +15,27 @@
         {% if text %}
         <div class="flex flex-col items-center" name="editor">
             <div class="flex flex-col gap-1 text-center">
-                <h3 class="font-bold">subheader</h3>
-                <p class="italic">subtext</p>
-                <small>sub-subtext</small>
+                <h3 class="font-bold">Template preview</h3>
+                <p class="italic">Remove text you don't want to change from fields</p>
+                <small>The guy who made this site is not a genius and will most definitely not add a way to edit your templates later lol</small>
             </div>
-            <br><br>
+            <br>
+            <div class="
+                border flex flex-col 
+                gap-2
+                rounded-md 
+                max-w-95 w-[90vw] sm:w-[45vw]
+                p-[clamp(1rem,1vw,4rem)] 
+                text-[clamp(1rem,1vw,2rem)] 
+                bg-white shadow-lg border-gray-300
+                ">
+                <div class="flex flex-col">
+                    <label class="pr-1 font-bold" for="tTitle">Template name</label>
+                    <small class="text-gray-500">If left blank, the placeholder will be used</small>
+                </div>
+                <input class="indent-[2%]" name="tTitle" id="template_title" placeholder="template_{{title_placeholder}}">
+            </div>
+            <br>
             <div class="flex justify-center relative" name="page-container">
                 {% if fileName %}<div class="dialog-text absolute -translate-y-[50%]"><p>{{fileName}}</p></div>{% endif %}
                 <div class="page"
@@ -89,9 +105,10 @@
     </div>
 <script>
 
-    const jsFields    = JSON.parse('{{ fields | tojson | default("[]") | safe }}');
-    const editForm    = document.getElementById("edit-form");
-    const fieldsInput = document.getElementById("fields-input");
+    const jsFields       = JSON.parse('{{ fields | tojson | default("[]") | safe }}');
+    const template_title = document.getElementById("template_title");
+    const editForm       = document.getElementById("edit-form");
+    const fieldsInput    = document.getElementById("fields-input");
 
     //@ignore
     document.querySelectorAll('.cancel-button').forEach(el => {
@@ -110,7 +127,10 @@
     });
     
     editForm.addEventListener("submit", () => {
-        console.log(jsFields);
+        if (!template_title.value) {
+            template_title.value = template_title.placeholder;
+        }
+        jsFields.push({ templateName: template_title.value });
         fieldsInput.value = JSON.stringify(jsFields);
     });
 
