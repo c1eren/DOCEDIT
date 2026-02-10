@@ -203,7 +203,7 @@ def handle_upload(request):
 def handle_selections(request):
     try:
         selections = json.loads(request.form['selections'])
-        # return f"<pre>{selections[0]}</pre>"
+        # return f"<div>{selections}</div>"
 
         doc_path = get_current_doc_path()    
         document = Document(doc_path)
@@ -213,26 +213,30 @@ def handle_selections(request):
         full_text = []
         final_fields = []
 
-        paragraphNum = 0
 
-        for paragraph in document.paragraphs:
-            paragraphNum += 1
-            text = paragraph.text
-            preview_text = text
+        for pIndex, paragraph in enumerate(document.paragraphs, start=1):
 
-            for selection in selections:
-                selText        = "".join(selection['text'].split())
+            preview_text = ""
+            reference_text = ""
+            
+            for run in paragraph.runs:
+                reference_text += run.text
+                preview_text += run.text
+                temp_selections = []
+
+            for selection in selections:                
+                selText        = "".join(ch for ch in selection['text'] if not ch.isspace()).lower()
                 pHolderText    = selection['placeholder']
 
                 stripped_text  = []
                 original_index = []
 
-                for index, char in enumerate(preview_text):
+                for index, char in enumerate(reference_text):
                     if not char.isspace():
                         stripped_text.append(char)
                         original_index.append(index)
 
-                stripped_text = "".join(stripped_text)
+                stripped_text = "".join(stripped_text).lower()
                 # Finding the starting char in matching subby
                 start_stripped = stripped_text.find(selText)
                 # In a function we'll just return -1
@@ -245,10 +249,11 @@ def handle_selections(request):
                     temp_selection = {
                         "uuid": str(uuid.uuid4()),
                         "text": selection['text'],
-                        "paragraphIndex": paragraphNum,
+                        "paragraphIndex": pIndex,
                         "index": {"start": start_original, "end": end_original},
                         "field_text": pHolderText
                         }
+                    temp_selections.append(temp_selection)
                     final_fields.append(temp_selection)
                     
             full_text.append(preview_text)
@@ -273,6 +278,80 @@ def handle_fields(request):
         doc_path = get_current_doc_path()    
         document = Document(doc_path)
 
+        # TODO: Fix all this logic lol
+        
+        # Go through each paragraph 
+        # for pIndex, paragraph in enumerate(document.paragraphs, start=1):
+        #     # Check each field against the run to see if it has a match in there to replace
+        #     for field in fields:
+        #         if field['paragraphIndex'] == str(pIndex):
+        #             for run in paragraph.runs:
+        #                 stripped_run = []
+        #                 original_index = []
+        #                 for index, char in enumerate(run.text):
+        #                     if not char.isspace():
+        #                         stripped_run.append(char)
+        #                         original_index.append(index)
+
+        #                 stripped_run = "".join(stripped_run)
+        #                 # Finding the starting char in matching subby
+        #                 start_stripped = stripped_run.find(field['text'])
+        #                 # In a function we'll just return -1
+        #                 if start_stripped == -1:
+        #                     continue
+        #                 start_original = original_index[start_stripped]
+        #                 end_original = original_index[start_stripped + len(field['text']) - 1]
+
+        #                 # Create a new string by combining slices and a new character
+        #                 run.text = run.text[:start_original] + field['field_text'] + run.text[end_original + 1:]
+        
+        
+        for pIndex, paragraph in enumerate(document.paragraphs, start=1):
+            # Sort fields in reverse based on where they are in paragraph
+            para_fields = [f for f in fields if f["paragraphIndex"] == pIndex]
+            para_fields.sort(key=lambda f: f["index"]["start"], reverse=True)
+            flat = ""
+            runs = []
+            # Combine runs into flat text, map the start and end indexes per paragraph 
+            for run in paragraph.runs:
+                start = len(flat)
+                flat += run.text
+                end = len(flat)
+                runs.append({
+                    "run": run,
+                    "start": start,
+                    "end": end
+                })
+                
+            # Using indexes from the flattened list and the field indexes
+            for field in para_fields:
+                if field['paragraphIndex'] == pIndex:
+                    field_start = field["index"]["start"]
+                    field_end   = field["index"]["end"] + 1
+                    replacement = field["field_text"]
+
+                    inserted = False
+
+                    for r in runs:
+                        if r["end"] <= field_start or r["start"] >= field_end:
+                            continue
+
+                        run = r["run"]
+                        text = run.text
+
+                        local_start = max(field_start, r["start"]) - r["start"]
+                        local_end   = min(field_end, r["end"]) - r["start"]
+
+                        if not inserted:
+                            run.text = text[:local_start] + replacement + text[local_end:]
+                            inserted = True
+                        else:
+                            run.text = text[:local_start] + text[local_end:]
+        full_text = []
+        for paragraph in document.paragraphs:
+            full_text.append(paragraph.text)
+        return f"<div>{full_text}</div>"
+
     except KeyError:
         # Missing 'selections' in POST
         flash("No selection data received from the form.")
@@ -283,9 +362,6 @@ def handle_fields(request):
         app.logger.error(f"Unexpected error in handle_fields: {e}")
         flash("An unexpected error occurred. Please try again.")
         return redirect(request.url)
-
-
-    return f"<div>{fields}</div>"
 
 
 
