@@ -28,9 +28,18 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route("/")
+@app.route("/", methods=['GET', 'POST'])
 def init_page():
-    return render_template("template_hub.html")
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'docSelect':
+            return f"<div>{action}</div>"
+        
+    path = app.config['TEMPLATE_FOLDER']
+    filenames = os.listdir(path)
+
+    return render_template("template_hub.html", fNames=filenames)
 
 @app.route('/create-template', methods=['GET', 'POST'])
 def create_template_page():
@@ -52,38 +61,6 @@ def create_template_page():
     else:
         return render_template('create_template.html', allowed_extensions=ALLOWED_EXTENSIONS)
                 
-
-                # This will be returned from download function or page or whatever
-                # target_stream = BytesIO()
-                # document.save(target_stream)
-                # target_stream.seek(0)
-
-                # return send_file(
-                # target_stream,
-                # as_attachment=True,
-                # download_name="modified.pdf"
-                # )
-                
-                # F_text = [p.text for p in document.paragraphs]
-
-                # except FileNotFoundError:
-                    # abort(404, description="Document not found") 
-
-                # t = []
-                # for item in selections:
-                #     # Each item in the list is a dictionary
-                #     t.append(item['text'])
-                # for paragraph in document.paragraphs:
-                #     for run in paragraph.runs:
-                #         for text in t:
-                #             if text in run.text:
-                #                 run.text = run.text.replace(text, "HERE")
-
-                # target_stream = BytesIO()
-                # document.save(target_stream)
-                # target_stream.seek(0)
-                # Extract text from all paragraphs
-
 def get_current_doc_path():
     doc_path = session.get('doc_path')
 

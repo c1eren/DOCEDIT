@@ -20,7 +20,7 @@
   a { @apply text-emerald-600 hover:text-emerald-500 underline; }
 
   /* Images */
-  img { @apply max-w-full h-auto; }
+  /* img { @apply max-w-full h-auto; } */
 
   /* Tables */
   table { @apply border-collapse w-full; }

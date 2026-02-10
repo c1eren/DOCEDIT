@@ -8,7 +8,51 @@
 </head>
 <body class="bg-orange-50">
     <div class="px-[10vw] py-[10vh]">
-        <a href="{{ url_for('create_template_page') }}">Create new template</a>
-    </div>
+        <div class="flex flex-col items-center">
+            <div name="template_chooser" class="page border mb-[10vh] w-[90vw] sm:w-[65vw] p-[clamp(1rem,5vw,4rem)]">
+                <div class="flex flex-col gap-1 ">
+                    <h3 class="font-bold">Choose template</h3>
+                    <p class="italic">This is the template, with fields included, that you'll edit and download copies of</p>
+                    <small>If there are no templates available create a new one by following the link below</small>
+                </div>
+                <br><br>
+                <form method="post" id="doc-select" class="grid grid-cols-2 gap-[clamp(1rem,1vw,2rem)] w-fit">
+                    <input type="hidden" name="action" value="docSelect">
+                    <input type="hidden" name="docSelect" id="docSelectInput">
+                    {% if fNames %}
+                        {% for filename in fNames %}
+                            <button type="submit" 
+                            class="doc hover:ring-2 select-none text-[clamp(1rem,1vw,2rem)] cursor-pointer rounded-md py-2 px-4
+                            ring-emerald-500 hover:ring-emerald-400 active:ring-emerald-700"
+                            data-filename="{{ filename }}">
+                            <img class="h-[clamp(3rem,5vw,5rem)]" src="../static/res/docx_icon.png">
+                                <p class="w-fit text-[clamp(1rem,1vw,2rem)] line-clamp-2">{{filename}}</p>
+                            </button>
+                        {% endfor %}
+                    {% endif %}
+                </form>
+            </div>
+            <br><br>
+            <div class="button-submit">
+                <a style="all:unset" href="{{ url_for('create_template_page') }}">
+                    <h3>Create new template</h3>
+                </a>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const form = document.getElementById('doc-select');
+            const input = document.getElementById('docSelectInput');
+
+            form.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-filename]');
+                if (!btn) return;
+
+                input.value = btn.dataset.filename;
+                console.log(btn.dataset.filename);
+                form.submit();
+            });
+        </script>
 </body>
 </html>
