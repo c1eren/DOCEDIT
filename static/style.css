@@ -57,6 +57,9 @@
     .page {
         @apply max-w-189 w-[90vw] sm:w-[65vw] p-[clamp(1rem,5vw,4rem)] pt-[clamp(2rem,5vw,4rem)] text-[clamp(1rem,1vw,2rem)] bg-white shadow-lg border border-gray-300;
     }
+    .navBar {
+        @apply sticky top-0 w-screen p-[clamp(0.5rem,0.8vw,4rem)] text-[clamp(1rem,1vw,2rem)] bg-white shadow-lg border border-gray-300;
+    }
     .dialog-text {
         @apply border rounded-md px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit bg-white shadow-lg border-gray-300;
     }

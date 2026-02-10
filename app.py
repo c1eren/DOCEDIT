@@ -43,8 +43,22 @@ def init_page():
     filenames = os.listdir(path)
     return render_template("template_hub.html", fNames=filenames)
 
-@app.route('/create-pdf', methods=['GET'])
+@app.route('/create-pdf', methods=['GET', 'POST'])
 def create_pdf_page():
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'download':
+            # All submitted fields
+            form_data = request.form.to_dict()
+
+            # Remove non-field keys
+            form_data.pop('action', None)
+            form_data.pop('download', None)
+
+            return handle_download(form_data)          
+    
+    
     filename = session.get('selected_template')
 
     if not filename:
@@ -77,8 +91,6 @@ def create_pdf_page():
             start = text.find("[--", end + 3)
     
     return render_template('create_new_pdf.html', text=full_text, filename=filename, fields=fieldArr)
-
-
 
 @app.route('/create-template', methods=['GET', 'POST'])
 def create_template_page():
@@ -117,6 +129,22 @@ def get_current_doc_path():
     
     return doc_path
 
+def get_current_selected_template():
+    selected_template = session.get('selected_template')
+    if not selected_template:
+        abort(400)
+
+    path = os.path.join(app.config['TEMPLATE_FOLDER'], selected_template)
+    if not os.path.isfile(path):
+        app.logger.error(f"Missing docx: {path}")
+        flash('Document file does not exist, try a different file')
+        return redirect(request.url)
+
+    if os.path.getsize(path) == 0:
+        flash('Document file is empty, try a different file')
+        return redirect(request.url)
+
+    return path
 
 def handle_upload(request):
     # Check if the post request has the file part
@@ -315,6 +343,82 @@ def handle_fields(request):
         flash("An unexpected error occurred. Please try again.")
         return redirect(request.url)
 
+def handle_download(field_values):
+    selected_template = get_current_selected_template()
+    document = Document(selected_template)
+    full_text_para = []
+    full_text_field = []
+    full_text = []
+
+    for paragraph in document.paragraphs:
+        for key, value in field_values.items():
+            replace_placeholder_in_paragraph(paragraph, key, value)
+        # for run in paragraph.runs:
+        #     full_text.append(run.text)
+
+    # for p in document.paragraphs:
+    #     full_text_para.append(repr(p.text))
+    # for key in field_values:
+    #     full_text_field.append(repr(key))
+
+    # return full_text
+
+    output = BytesIO()
+    document.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="final_document.docx",
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+    # return send_file(
+    #     output,
+    #     as_attachment=True,
+    #     download_name="final_document.docx",
+    #     mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    # )
+
+def replace_placeholder_in_paragraph(paragraph, placeholder, replacement):
+    while True:
+        flat = ""
+        runs = []
+
+        # rebuild flattened text + run map
+        for run in paragraph.runs:
+            start = len(flat)
+            flat += run.text
+            end = len(flat)
+            runs.append({
+                "run": run,
+                "start": start,
+                "end": end
+            })
+
+        start = flat.find(placeholder)
+        if start == -1:
+            break
+
+        end = start + len(placeholder)
+        inserted = False
+
+        for r in runs:
+            if r["end"] <= start or r["start"] >= end:
+                continue
+
+            run = r["run"]
+            text = run.text
+
+            local_start = max(start, r["start"]) - r["start"]
+            local_end   = min(end, r["end"]) - r["start"]
+
+            if not inserted:
+                run.text = text[:local_start] + replacement + text[local_end:]
+                inserted = True
+            else:
+                run.text = text[:local_start] + text[local_end:]
 
 if __name__ == "__main__":
     app.run(debug=True)

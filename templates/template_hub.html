@@ -7,6 +7,13 @@
     <title>DOCEDIT | Template Hub</title>
 </head>
 <body class="bg-orange-50">
+    <nav class="navBar z-99">
+        <a style="all:unset" href="{{ url_for('init_page') }}">
+            <div class="button-submit w-fit">
+                Back to template hub
+            </div>
+        </a>
+    </nav>
     <div class="px-[10vw] py-[10vh]">
         <div class="flex flex-col items-center">
             <div name="template_chooser" class="page border mb-[10vh] w-[90vw] sm:w-[65vw] p-[clamp(1rem,5vw,4rem)]">
@@ -33,11 +40,11 @@
                 </form>
             </div>
             <br><br>
-            <div class="button-submit">
-                <a style="all:unset" href="{{ url_for('create_template_page') }}">
+            <a style="all:unset" href="{{ url_for('create_template_page') }}">
+                <div class="button-submit">
                     <h3>Create new template</h3>
-                </a>
                 </div>
+            </a>
             </div>
         </div>
 
