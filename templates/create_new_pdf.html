@@ -17,27 +17,32 @@
         <div class="px-[10vw] py-[10vh]">
             <div class="flex flex-col gap-1 text-start">
                 <h3 class="font-bold">Alter text via fields</h3>
-                <p class="italic">Change field content here to replace text in the final downloadable pdf</p>
-                <small>Beans</small>
+                <p class="italic">Change field content here to replace text in the final downloaded pdf</p>
+                <small>New filename optional</small>
             </div>
             <br><br>
         <form class="w-full" method="post" id="download-form">
             <input type="hidden" name="action" value="download">
             <div class="flex flex-col gap-4">
+                <div>
+                    <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit text-end" for="docName">Edit filename (optional)</label>
+                    <input id="filename-field" name="docName" class="dialog-text" placeholder="{{fileName.replace('.docx', '.pdf')}}" value="{{fileName.replace('.docx', '.pdf')}}">
+                </div>
+                <br>
                 {% if fields %}
-                <div class="flex flex-col gap-4 items-start justify-start">
+                <div class="flex flex-col gap-4 items-start p-[clamp(1rem,5vw,4rem)] rounded-md ring-2 ring-emerald-500 hover:ring-emerald-400 active:ring-emerald-700 shadow-sm justify-start">
                 {% for field in fields %}
                     <div class="grid grid-cols-2 gap-2">
                         <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit text-end" for="{{field}}">{{field}}</label>
-                        <input name="{{field}}" class="dialog-text" placeholder="{{field}}">
+                        <textarea name="{{field}}" class="dialog-text" placeholder="{{field}}" required></textarea>
                     </div>
                 {% endfor %}
+                <button class="button-submit self-end" type="submit" value="Submit">Download PDF</button>
                 </div>
                 {% endif %}
-                <button class="button-submit self-end" type="submit" value="Submit">Download PDF</button>
             </div>
         </form>
-        <br>
+        <br><br>
         
         {% if text %}
         <div class="flex flex-col items-center" name="editor">
@@ -55,6 +60,18 @@
             <br>
         {% endif %}
     </div>
+
+    <script>
+        const form           = document.getElementById("download-form");
+        const filename_field = document.getElementById("filename-field");
+
+
+        form.addEventListener("submit", () => {
+            if (filename_field.value.trim() === "") {
+                filename_field.value = filename_field.placeholder;
+            }
+        });
+    </script>
     
 </body>
 </html>

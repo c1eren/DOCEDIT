@@ -8,6 +8,12 @@ from werkzeug.datastructures import FileStorage
 
 import json
 from docx import Document
+from docx2pdf import convert
+import subprocess
+
+# Path to LibreOffice executable
+# Need to change this when going live, will need some sort of stripped down version of libre on the server too
+libre_office = r"C:\Program Files\LibreOffice\program\soffice.exe"
 
 app = Flask(__name__)
 
@@ -90,7 +96,7 @@ def create_pdf_page():
 
             start = text.find("[--", end + 3)
     
-    return render_template('create_new_pdf.html', text=full_text, filename=filename, fields=fieldArr)
+    return render_template('create_new_pdf.html', text=full_text, fileName=filename, fields=fieldArr)
 
 @app.route('/create-template', methods=['GET', 'POST'])
 def create_template_page():
@@ -346,13 +352,15 @@ def handle_fields(request):
 def handle_download(field_values):
     selected_template = get_current_selected_template()
     document = Document(selected_template)
+    filename = field_values['docName']
+    return  f"<div>{filename}</div>"
     full_text_para = []
     full_text_field = []
     full_text = []
 
     for paragraph in document.paragraphs:
         for key, value in field_values.items():
-            replace_placeholder_in_paragraph(paragraph, key, value)
+            replace_placeholder_in_paragraph(paragraph, key, value.strip())
         # for run in paragraph.runs:
         #     full_text.append(run.text)
 
@@ -362,16 +370,27 @@ def handle_download(field_values):
     #     full_text_field.append(repr(key))
 
     # return full_text
+    fPath = save_docx_temp(document)
+    output_folder = app.config['UPLOAD_FOLDER']
+    # subprocess.run([
+    #     "libreoffice",
+    #     "--headless",
+    #     "--convert-to", "pdf",
+    #     "C:\programming\FullStack\DocumentEdit\uploads\temp_file.docx",
+    #     "--outdir", output_folder
+    # ], check=True)
+    # return "beans"
 
-    output = BytesIO()
-    document.save(output)
-    output.seek(0)
+    # Example usage
+    temp_docx = r"C:\programming\FullStack\DocumentEdit\uploads\temp_file.docx"
+    pdf_file = convert_docx_to_pdf(temp_docx)
+    print("PDF generated at:", pdf_file)
 
     return send_file(
-        output,
+        pdf_file,
         as_attachment=True,
-        download_name="final_document.docx",
-        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        download_name="test.pdf",
+        mimetype="application/pdf"
     )
 
     # return send_file(
@@ -419,6 +438,47 @@ def replace_placeholder_in_paragraph(paragraph, placeholder, replacement):
                 inserted = True
             else:
                 run.text = text[:local_start] + text[local_end:]
+
+
+def save_docx_temp(document):
+    # Generate a safe filename (you could also use a UUID to avoid collisions)
+    fName = secure_filename("temp_file.docx")
+    path = os.path.join(app.config['UPLOAD_FOLDER'], fName)
+
+    # Save the document to the filesystem
+    document.save(path)
+
+    # Return the full path for later use
+    return path
+
+def convert_docx_to_pdf(docx_path):
+    # Make a temporary PDF filename
+    pdf_name = os.path.splitext(os.path.basename(docx_path))[0] + ".pdf"
+    pdf_path = os.path.join(os.path.dirname(docx_path), pdf_name)
+
+    # Convert DOCX to PDF
+    convert(docx_path, pdf_path)
+
+    return pdf_path
+
+def convert_docx_to_pdf(docx_path, output_dir=None):
+    if output_dir is None:
+        output_dir = os.path.dirname(docx_path)
+
+    # Call LibreOffice in headless mode
+    subprocess.run([
+        libre_office,
+        "--headless",
+        "--convert-to", "pdf",
+        docx_path,
+        "--outdir", output_dir
+    ], check=True)
+
+    # Construct PDF path
+    base_name = os.path.splitext(os.path.basename(docx_path))[0]
+    pdf_path = os.path.join(output_dir, f"{base_name}.pdf")
+    return pdf_path
+
 
 if __name__ == "__main__":
     app.run(debug=True)
