@@ -7,23 +7,18 @@
     <title>DOCEDIT | Template Hub</title>
 </head>
 <body class="bg-orange-50">
-    <nav class="navBar z-99">
-        <a style="all:unset" href="{{ url_for('init_page') }}">
-            <div class="button-submit w-fit">
-                Back to template hub
-            </div>
-        </a>
-    </nav>
+      <!-- <div class="absolute h-[200vh] z-100 inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-gradient-to-b  from-blue-500 to-purple-500"></div> -->
+    {% include '_nav.html' %}
     <div class="px-[10vw] py-[10vh]">
         <div class="flex flex-col items-center">
-            <div name="template_chooser" class="page border mb-[10vh] w-[90vw] sm:w-[65vw] p-[clamp(1rem,5vw,4rem)]">
+            <div name="template_chooser" class="page border mb-[10vh] max-w-[90vw] sm:w-[90vw] md:w-[75vw] lg:w-[65vw]">
                 <div class="flex flex-col gap-1 ">
                     <h3 class="font-bold">Choose template</h3>
                     <p class="italic">This is the template, with fields included, that you'll edit and download copies of</p>
                     <small>If there are no templates available create a new one by following the link below</small>
                 </div>
                 <br><br>
-                <form method="post" id="doc-select" class="grid grid-cols-2 gap-[clamp(1rem,1vw,2rem)] w-fit">
+                <form method="post" id="doc-select" class="flex flex-col sm:grid grid-cols-2 gap-[clamp(1rem,1vw,2rem)] w-fit">
                     <input type="hidden" name="action" value="docSelect">
                     <input type="hidden" name="docSelect" id="docSelectInput">
                     {% if fNames %}
@@ -32,8 +27,10 @@
                             class="doc hover:ring-2 select-none text-[clamp(1rem,1vw,2rem)] cursor-pointer rounded-md py-2 px-4
                             ring-emerald-500 hover:ring-emerald-400 active:ring-emerald-700"
                             data-filename="{{ filename }}">
-                            <img class="h-[clamp(3rem,5vw,5rem)]" src="../static/res/docx_icon.png">
-                                <p class="w-fit text-[clamp(1rem,1vw,2rem)] line-clamp-2">{{filename}}</p>
+                            <div class="overflow-hidden">
+                                <img class="h-[clamp(3rem,5vw,5rem)]" src="../static/res/docx_icon.png">
+                                <p class="w-fit text-start text-[clamp(1rem,1vw,2rem)]">{{filename}}</p>
+                            </div>
                             </button>
                         {% endfor %}
                     {% endif %}

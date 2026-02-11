@@ -331,7 +331,9 @@ def handle_fields(request):
             full_text.append(paragraph.text)
 
         # Save the new template to the template folder (for now, upgrade to db storage in future potentially)
-        fName = secure_filename(template_name + ".docx")
+        # fName = secure_filename(template_name + ".docx")
+        # The werkzeug secure_filename function was removing char I wanted so we're rawdogging it now
+        fName = (template_name + ".docx")
         path = os.path.join(app.config['TEMPLATE_FOLDER'], fName)
         document.save(path)
 
@@ -352,8 +354,24 @@ def handle_fields(request):
 def handle_download(field_values):
     selected_template = get_current_selected_template()
     document = Document(selected_template)
-    filename = field_values['docName']
-    return  f"<div>{filename}</div>"
+    filename = field_values['docName'].strip()
+
+    for key, value in field_values.items():
+        if key in filename:
+            fValue = "".join(str(value).split())
+            filename = filename.replace(str(key), fValue)
+    # To note: if the value to replace has a '.' in it, the rest of the filename will be lobbed off in the next loop
+
+    endFname = filename.find('.')
+    if endFname != -1:
+        if len(filename[:endFname].strip()) == 0:
+            filename = "newfile.pdf"
+        else:
+            filename = filename[:endFname] + ".pdf"
+    else:
+        filename += ".pdf"
+
+
     full_text_para = []
     full_text_field = []
     full_text = []
@@ -389,7 +407,7 @@ def handle_download(field_values):
     return send_file(
         pdf_file,
         as_attachment=True,
-        download_name="test.pdf",
+        download_name=filename,
         mimetype="application/pdf"
     )
 

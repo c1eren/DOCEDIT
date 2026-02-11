@@ -7,36 +7,44 @@
         <title>DOCEDIT | Create Template</title>
     </head>
     <body class="bg-orange-50">
-        <nav class="navBar z-99">
-            <a style="all:unset" href="{{ url_for('init_page') }}">
-                <div class="button-submit w-fit">
-                    Back to template hub
-                </div>
-            </a>
-        </nav>
+        {% include '_nav.html' %}
         <div class="px-[10vw] py-[10vh]">
             <div class="flex flex-col gap-1 text-start">
                 <h3 class="font-bold">Alter text via fields</h3>
                 <p class="italic">Change field content here to replace text in the final downloaded pdf</p>
-                <small>New filename optional</small>
+                <small>Maybe someday there'll be a sweet pdf preview widget here as well</small>
             </div>
             <br><br>
         <form class="w-full" method="post" id="download-form">
             <input type="hidden" name="action" value="download">
             <div class="flex flex-col gap-4">
                 <div>
-                    <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit text-end" for="docName">Edit filename (optional)</label>
-                    <input id="filename-field" name="docName" class="dialog-text" placeholder="{{fileName.replace('.docx', '.pdf')}}" value="{{fileName.replace('.docx', '.pdf')}}">
+                    <div class="flex flex-col max-w-[90vw] sm:max-w-[75vw] md:max-w-[50vw] lg:max-w-[25vw]">
+                        <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit" for="docName">Edit filename (optional)</label>
+                        <input id="filename-field" name="docName" class="dialog-text shadow-none" placeholder="{{fileName.replace('.docx', '.pdf')}}" value="{{fileName.replace('.docx', '.pdf')}}">
+                        <small class="
+                        px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit text-end
+                        ">Copy key into filename to replace ex: <span class="italic text-nowrap text-emerald-500 active:text-emerald-400 hover:text-emerald-700 ">new_pdf_for_[-- key --]_2026.pdf</span></small>
+                    </div>
                 </div>
                 <br>
                 {% if fields %}
-                <div class="flex flex-col gap-4 items-start p-[clamp(1rem,5vw,4rem)] rounded-md ring-2 ring-emerald-500 hover:ring-emerald-400 active:ring-emerald-700 shadow-sm justify-start">
+                <div class="sm:grid gap-4 items-start justify-start self-center
+                p-[clamp(1rem,5vw,4rem)] rounded-md ring-2
+                max-w-[90vw] w-full sm:w-fit
+                ring-emerald-500 hover:ring-emerald-400 active:ring-emerald-700 shadow-sm 
+                ">
                 {% for field in fields %}
-                    <div class="grid grid-cols-2 gap-2">
-                        <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit text-end" for="{{field}}">{{field}}</label>
-                        <textarea name="{{field}}" class="dialog-text" placeholder="{{field}}" required></textarea>
+                    <div class="flex flex-col 
+                    sm:grid sm:grid-cols-[1fr_2fr] 
+                    md:grid-cols-[1fr_3fr] 
+                    lg:grid-cols-[1fr_4fr] 
+                    gap-2 ">
+                        <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit sm:text-end text-nowrap" for="{{field}}">{{field}}</label>
+                        <textarea name="{{field}}" class="dialog-text field-sizing-content text-nowrap" placeholder="{{field}}" required></textarea>
                     </div>
                 {% endfor %}
+                <br>
                 <button class="button-submit self-end" type="submit" value="Submit">Download PDF</button>
                 </div>
                 {% endif %}

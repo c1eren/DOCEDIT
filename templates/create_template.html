@@ -7,13 +7,7 @@
     <title>DOCEDIT | Create Template</title>
 </head>
 <body class="bg-orange-50">
-    <nav class="navBar z-99">
-        <a style="all:unset" href="{{ url_for('init_page') }}">
-            <div class="button-submit w-fit">
-                Back to template hub
-            </div>
-        </a>
-    </nav>
+    {% include '_nav.html' %}
     <div class="px-[10vw] py-[10vh]">
         <div name="form-container">
             <form enctype="multipart/form-data" method="post">
