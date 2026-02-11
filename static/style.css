@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+  scrollbar-gutter: stable; 
+}
   /* Headings */
   h1 { @apply text-4xl font-bold leading-tight; }
   h2 { @apply text-3xl font-bold leading-snug; }
@@ -42,7 +45,9 @@
   hr { @apply border-t border-gray-300; }
 
   /* Default body */
-  body { @apply font-sans text-gray-900 bg-orange-50; }
+  body {    
+    @apply overflow-x-clip font-sans text-gray-900 bg-orange-50; 
+  }
 }
 
 

@@ -360,6 +360,7 @@ def handle_download(field_values):
         if key in filename:
             fValue = "".join(str(value).split())
             filename = filename.replace(str(key), fValue)
+
     # To note: if the value to replace has a '.' in it, the rest of the filename will be lobbed off in the next loop
 
     endFname = filename.find('.')
@@ -371,25 +372,13 @@ def handle_download(field_values):
     else:
         filename += ".pdf"
 
-
-    full_text_para = []
-    full_text_field = []
-    full_text = []
-
     for paragraph in document.paragraphs:
         for key, value in field_values.items():
             replace_placeholder_in_paragraph(paragraph, key, value.strip())
-        # for run in paragraph.runs:
-        #     full_text.append(run.text)
-
-    # for p in document.paragraphs:
-    #     full_text_para.append(repr(p.text))
-    # for key in field_values:
-    #     full_text_field.append(repr(key))
 
     # return full_text
-    fPath = save_docx_temp(document)
-    output_folder = app.config['UPLOAD_FOLDER']
+    # fPath = save_docx_temp(document)
+    # output_folder = app.config['UPLOAD_FOLDER']
     # subprocess.run([
     #     "libreoffice",
     #     "--headless",
@@ -399,8 +388,7 @@ def handle_download(field_values):
     # ], check=True)
     # return "beans"
 
-    # Example usage
-    temp_docx = r"C:\programming\FullStack\DocumentEdit\uploads\temp_file.docx"
+    temp_docx = save_docx_temp(document)
     pdf_file = convert_docx_to_pdf(temp_docx)
     print("PDF generated at:", pdf_file)
 
@@ -410,13 +398,6 @@ def handle_download(field_values):
         download_name=filename,
         mimetype="application/pdf"
     )
-
-    # return send_file(
-    #     output,
-    #     as_attachment=True,
-    #     download_name="final_document.docx",
-    #     mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    # )
 
 def replace_placeholder_in_paragraph(paragraph, placeholder, replacement):
     while True:
@@ -460,7 +441,7 @@ def replace_placeholder_in_paragraph(paragraph, placeholder, replacement):
 
 def save_docx_temp(document):
     # Generate a safe filename (you could also use a UUID to avoid collisions)
-    fName = secure_filename("temp_file.docx")
+    fName = secure_filename(str(uuid.uuid4()) + ".docx")
     path = os.path.join(app.config['UPLOAD_FOLDER'], fName)
 
     # Save the document to the filesystem
