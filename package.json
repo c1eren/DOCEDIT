@@ -8,7 +8,9 @@
     "flask-reset": "node scripts/flask-reset.js",
     "tailwind": "npx @tailwindcss/cli -i ./static/style.css -o ./static/output.css --watch",
     "flask": ".venv\\Scripts\\python.exe -m flask --app app run --debug",
-    "dev": "concurrently \"npm run flask\" \"npm run tailwind\""
+    "flask-prod": ".venv\\Scripts\\python.exe -m flask --app app run",
+    "dev": "concurrently \"npm run flask\" \"npm run tailwind\"",
+    "prod": "concurrently \"npm run flask-prod\" \"npm run tailwind\""
   },
   "keywords": [],
   "author": "",

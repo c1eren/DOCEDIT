@@ -6,19 +6,12 @@ from io import BytesIO
 
 from dotenv import load_dotenv
 
-from flask import Flask, request, flash, redirect, render_template, send_file, session, abort
+from flask import Flask, request, flash, redirect, render_template, send_file, session, abort, after_this_request
 
 from docx import Document
 
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
-from werkzeug.datastructures import FileStorage
-
-# from docx2pdf import convert
-
-# Path to LibreOffice executable
-# Need to change this when going live, will need some sort of stripped down version of libre on the server too
-# libre_office = r"C:\Program Files\LibreOffice\program\soffice.exe"
 
 app = Flask(__name__)
 
@@ -50,10 +43,48 @@ def init_page():
     if request.method == 'POST':
         action = request.form.get('action')
 
+        if action == 'upload':
+            try:
+                if 'file' in request.files:
+                    # Check if file actually submitted
+                    # Get file
+                    file = request.files['file']
+
+                    if file.filename == '':
+                        flash('No file selected')
+                        return redirect(request.url)
+                    
+                    # Check file exists and is allowed
+                    if file and allowed_file(file.filename):
+                        source_stream = BytesIO(file.read())
+                        source_stream.close()
+
+                        # Save uploaded file temporarily and the path in session
+                        fName = (file.filename)
+                        path = os.path.join(app.config['UPLOAD_FOLDER'], fName)
+                        file.stream.seek(0)
+                        file.save(path)
+                        session['selected_template'] = fName
+                        session['selected_template_location'] = app.config['UPLOAD_FOLDER']
+
+                        return redirect('/create-pdf')
+
+                    else:
+                        flash('Accepted filetypes: ' + str(ALLOWED_EXTENSIONS).strip('}{'))
+                        return redirect(request.url)
+                else:
+                    flash('File not found in request')
+                    return redirect(request.url)         
+
+            except RequestEntityTooLarge:
+                flash('Maximum filesize: ' + str(app.config['MAX_CONTENT_LENGTH'] / (1000 * 1000)) + ' MB' )
+                return redirect(request.url)
+
         if action == 'docSelect':
             filename = request.form['docSelect']
             if filename:
                 session['selected_template'] = filename
+                session['selected_template_location'] = app.config['TEMPLATE_FOLDER']
                 return redirect('/create-pdf')  
         
     path = app.config['TEMPLATE_FOLDER']
@@ -79,11 +110,12 @@ def create_pdf_page():
     ## Create the download from template page ##    
     
     filename = session.get('selected_template')
+    filePath = session.get('selected_template_location')
 
-    if not filename:
+    if not filename or not filePath:
         abort(400, "No template selected")
 
-    path = os.path.join(app.config['TEMPLATE_FOLDER'], filename)
+    path = os.path.join(filePath, filename)
 
     if not os.path.isfile(path):
         abort(404, "Template not found")
@@ -149,11 +181,15 @@ def get_current_doc_path():
     return doc_path
 
 def get_current_selected_template():
-    selected_template = session.get('selected_template')
-    if not selected_template:
-        abort(400)
 
-    path = os.path.join(app.config['TEMPLATE_FOLDER'], selected_template)
+    filename = session.get('selected_template')
+    filePath = session.get('selected_template_location')
+
+    if not filename or not filePath:
+        abort(400, "No template selected")
+
+    path = os.path.join(filePath, filename)
+
     if not os.path.isfile(path):
         app.logger.error(f"Missing docx: {path}")
         flash('Document file does not exist, try a different file')
