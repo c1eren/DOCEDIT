@@ -31,7 +31,7 @@
                 bg-white shadow-lg border-gray-300
                 ">
                 <div class="flex flex-col">
-                    <label class="pr-1 font-bold" for="tTitle">Template name</label>
+                    <label class="pr-1 font-bold" for="template_title">Template name</label>
                     <small class="text-gray-500">If left blank, the placeholder will be used</small>
                 </div>
                 <input class="indent-[2%]" name="tTitle" id="template_title" placeholder="template_{{title_placeholder}}">
@@ -93,7 +93,8 @@
                 <div class="flex flex-col gap-4">
                     <div id="edit-fields" class="flex flex-col gap-2 sm:grid sm:grid-cols-2"></div>
                     <input type="hidden" name="fields" id="fields-input">
-                    <button class="button-submit self-end" type="submit" value="Submit">Create Template</button>
+                    <button class="button-submit self-end bg-gray-300" type="submit" name="sub-action" value="create" disabled>Create Template</button>
+                    <button class="button-submit self-end" type="submit" name="sub-action" value="save-local">Save Template Locally</button>
 
                 </div>
                 </div>

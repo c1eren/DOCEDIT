@@ -17,7 +17,46 @@
                     <p class="italic">This is the template, with fields included, that you'll edit and download copies of</p>
                     <small>If there are no templates available create a new one by following the link below</small>
                 </div>
-                <br><br>
+                <br>
+                <div name="form-container">
+            <form enctype="multipart/form-data" method="post">
+                <input type="hidden" name="action" value="upload">
+                <div class="flex flex-col gap-1">
+                    <div>
+                        <p class="font-bold">Upload
+                            {% for extension in allowed_extensions %}
+                            <span>.{{extension}}</span>
+                            {% endfor %}
+                        </p>
+                    </div>
+                    <div>
+                        <input 
+                        class="input-text bg-white
+                        "  
+                        type="file" id="file-button" name="file" required
+                        {% if allowed_extensions%} 
+                        accept="
+                        {% for extension in allowed_extensions %}
+                        .{{extension}}, 
+                        {% endfor %}
+                        "
+                         {% endif %}
+                        >
+                        <input class="button-submit" type="submit" value="Upload">
+                    </div>
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            <ul>
+                                {% for message in messages %}
+                                    <li class="text-red-600">{{ message }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </form>
+        </div>
+                <br>
                 <form method="post" id="doc-select" class="flex flex-col sm:grid grid-cols-2 gap-[clamp(1rem,1vw,2rem)] w-fit">
                     <input type="hidden" name="action" value="docSelect">
                     <input type="hidden" name="docSelect" id="docSelectInput">
@@ -34,6 +73,7 @@
                             </button>
                         {% endfor %}
                     {% endif %}
+                    </div>
                 </form>
             </div>
             <br><br>

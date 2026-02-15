@@ -1,21 +1,29 @@
 import os
-from io import BytesIO
 import uuid
+import json
+import subprocess
+from io import BytesIO
+
+from dotenv import load_dotenv
+
 from flask import Flask, request, flash, redirect, render_template, send_file, session, abort
+
+from docx import Document
+
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.datastructures import FileStorage
 
-import json
-from docx import Document
-from docx2pdf import convert
-import subprocess
+# from docx2pdf import convert
 
 # Path to LibreOffice executable
 # Need to change this when going live, will need some sort of stripped down version of libre on the server too
-libre_office = r"C:\Program Files\LibreOffice\program\soffice.exe"
+# libre_office = r"C:\Program Files\LibreOffice\program\soffice.exe"
 
 app = Flask(__name__)
+
+load_dotenv()
+libre_office = os.getenv("LIBRE_OFFICE_PATH")
 
 ALLOWED_EXTENSIONS = {'docx'}
 UPLOAD_FOLDER   = os.path.join(os.getcwd(), "uploads")
@@ -36,6 +44,9 @@ def allowed_file(filename):
 
 @app.route("/", methods=['GET', 'POST'])
 def init_page():
+
+    wipe_uploads_folder()
+
     if request.method == 'POST':
         action = request.form.get('action')
 
@@ -47,23 +58,25 @@ def init_page():
         
     path = app.config['TEMPLATE_FOLDER']
     filenames = os.listdir(path)
-    return render_template("template_hub.html", fNames=filenames)
+    return render_template("template_hub.html", fNames=filenames, allowed_extensions=ALLOWED_EXTENSIONS)
 
 @app.route('/create-pdf', methods=['GET', 'POST'])
 def create_pdf_page():
     if request.method == 'POST':
         action = request.form.get('action')
 
+        ## Handle if download button is clicked ## 
         if action == 'download':
             # All submitted fields
             form_data = request.form.to_dict()
 
-            # Remove non-field keys
+            # Remove non-field keys (like the document title etc.)
             form_data.pop('action', None)
             form_data.pop('download', None)
 
-            return handle_download(form_data)          
-    
+            return handle_download(form_data)
+
+    ## Create the download from template page ##    
     
     filename = session.get('selected_template')
 
@@ -330,12 +343,35 @@ def handle_fields(request):
         for paragraph in document.paragraphs:
             full_text.append(paragraph.text)
 
+        fName = (template_name + ".docx")
+        upPath = os.path.join(app.config['UPLOAD_FOLDER'], fName)
+        document.save(upPath)        
+
+        if request.form.get('sub-action') == "save-local":
+            # Load that bad boy into memory
+            file_stream = BytesIO()
+            with open(upPath, "rb") as f:
+                file_stream.write(f.read())
+            file_stream.seek(0)
+
+            # Download it
+            return send_file(
+                file_stream,
+                as_attachment=True,
+                download_name=fName,
+                mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+            
+        if request.form.get('sub-action') == "create":
+            file_stream = BytesIO()
+            with open(upPath, "rb") as f:
+                file_stream.write(f.read())
+            path = os.path.join(app.config['TEMPLATE_FOLDER'], fName)
+            document.save(path)            
+
         # Save the new template to the template folder (for now, upgrade to db storage in future potentially)
         # fName = secure_filename(template_name + ".docx")
         # The werkzeug secure_filename function was removing char I wanted so we're rawdogging it now
-        fName = (template_name + ".docx")
-        path = os.path.join(app.config['TEMPLATE_FOLDER'], fName)
-        document.save(path)
 
         return redirect('/')  
 
@@ -376,24 +412,28 @@ def handle_download(field_values):
         for key, value in field_values.items():
             replace_placeholder_in_paragraph(paragraph, key, value.strip())
 
-    # return full_text
-    # fPath = save_docx_temp(document)
-    # output_folder = app.config['UPLOAD_FOLDER']
-    # subprocess.run([
-    #     "libreoffice",
-    #     "--headless",
-    #     "--convert-to", "pdf",
-    #     "C:\programming\FullStack\DocumentEdit\uploads\temp_file.docx",
-    #     "--outdir", output_folder
-    # ], check=True)
-    # return "beans"
-
     temp_docx = save_docx_temp(document)
-    pdf_file = convert_docx_to_pdf(temp_docx)
-    print("PDF generated at:", pdf_file)
+    pdf_file  = convert_docx_to_pdf(temp_docx)
+
+    # Clean up DOCX
+    try:
+        os.remove(temp_docx)
+    except Exception as e:
+        app.logger.error(f"Failed to remove temp DOCX: {e}")
+
+    pdf_bytes = BytesIO()
+    with open(pdf_file, "rb") as f:
+        pdf_bytes.write(f.read())
+    pdf_bytes.seek(0)
+
+    # Clean up PDF
+    try:
+        os.remove(pdf_file)
+    except Exception as e:
+        app.logger.error(f"Failed to remove temp PDF: {e}")
 
     return send_file(
-        pdf_file,
+        pdf_bytes,
         as_attachment=True,
         download_name=filename,
         mimetype="application/pdf"
@@ -440,7 +480,6 @@ def replace_placeholder_in_paragraph(paragraph, placeholder, replacement):
 
 
 def save_docx_temp(document):
-    # Generate a safe filename (you could also use a UUID to avoid collisions)
     fName = secure_filename(str(uuid.uuid4()) + ".docx")
     path = os.path.join(app.config['UPLOAD_FOLDER'], fName)
 
@@ -449,16 +488,6 @@ def save_docx_temp(document):
 
     # Return the full path for later use
     return path
-
-def convert_docx_to_pdf(docx_path):
-    # Make a temporary PDF filename
-    pdf_name = os.path.splitext(os.path.basename(docx_path))[0] + ".pdf"
-    pdf_path = os.path.join(os.path.dirname(docx_path), pdf_name)
-
-    # Convert DOCX to PDF
-    convert(docx_path, pdf_path)
-
-    return pdf_path
 
 def convert_docx_to_pdf(docx_path, output_dir=None):
     if output_dir is None:
@@ -477,6 +506,15 @@ def convert_docx_to_pdf(docx_path, output_dir=None):
     base_name = os.path.splitext(os.path.basename(docx_path))[0]
     pdf_path = os.path.join(output_dir, f"{base_name}.pdf")
     return pdf_path
+
+def wipe_uploads_folder():
+    for filename in os.listdir(app.config['UPLOAD_FOLDER']): 
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename) 
+        try: 
+            if os.path.isfile(file_path): 
+                os.remove(file_path) 
+        except Exception as e:
+            app.logger.error(f"Failed to delete {file_path}: {e}")
 
 
 if __name__ == "__main__":
