@@ -20,7 +20,7 @@
             <div class="flex flex-col gap-4">
                 <div>
                     <div class="flex flex-col max-w-[90vw] sm:max-w-[75vw] md:max-w-[50vw] lg:max-w-[25vw]">
-                        <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit" for="docName">Edit filename (optional)</label>
+                        <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit" for="filename-field">Edit filename (optional)</label>
                         <input id="filename-field" name="docName" class="dialog-text shadow-none" placeholder="{{fileName.replace('.docx', '.pdf')}}" value="{{fileName.replace('.docx', '.pdf')}}">
                         <small class="
                         px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit text-end
@@ -40,8 +40,8 @@
                     md:grid-cols-[1fr_3fr] 
                     lg:grid-cols-[1fr_4fr] 
                     gap-2 ">
-                        <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit sm:text-end text-nowrap" for="{{field}}">{{field}}</label>
-                        <textarea name="{{field}}" class="dialog-text field-sizing-content text-nowrap" placeholder="{{field}}" required></textarea>
+                        <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit sm:text-end text-nowrap" for="field-{{ loop.index0 }}">{{field}}</label>
+                        <textarea id="field-{{ loop.index0 }}" name="{{field}}" class="dialog-text field-sizing-content text-nowrap" placeholder="{{field}}" required></textarea>
                     </div>
                 {% endfor %}
                 <br>
