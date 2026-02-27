@@ -1,15 +1,13 @@
 import os
 import uuid
 import json
+import time
 import subprocess
+import shutil
 from io import BytesIO
-
 from dotenv import load_dotenv
-
-from flask import Flask, request, flash, redirect, render_template, send_file, session, abort, after_this_request
-
+from flask import Flask, request, flash, redirect, render_template, send_file, session, abort
 from docx import Document
-
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
@@ -29,16 +27,29 @@ app.config['TEMPLATE_FOLDER'] = TEMPLATE_FOLDER
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['TEMPLATE_FOLDER'], exist_ok=True)
 
-# Might need to save the document temporarily to keep it in memory or something so it can be altered later
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def get_session_id():
+    if 'user_id' not in session:
+        session['user_id'] = str(uuid.uuid4())
+    return session['user_id']
+
+def get_user_upload_folder():
+    user_id = get_session_id()
+    if not user_id:
+        abort(400, "Session expired")
+    path = os.path.join(app.config['UPLOAD_FOLDER'], user_id)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+@app.before_request
+def before_request_cleanup():
+    cleanup_old_uploads(hours=2)
+
 @app.route("/", methods=['GET', 'POST'])
 def init_page():
-
-    wipe_uploads_folder()
 
     if request.method == 'POST':
         action = request.form.get('action')
@@ -61,7 +72,10 @@ def init_page():
 
                         # Save uploaded file temporarily and the path in session
                         fName = (file.filename)
-                        path = os.path.join(app.config['UPLOAD_FOLDER'], fName)
+                        
+                        user_folder = get_user_upload_folder()
+                        path = os.path.join(user_folder, fName)
+
                         file.stream.seek(0)
                         file.save(path)
                         session['selected_template'] = fName
@@ -110,15 +124,12 @@ def create_pdf_page():
     ## Create the download from template page ##    
     
     filename = session.get('selected_template')
-    filePath = session.get('selected_template_location')
-
-    if not filename or not filePath:
+    if not filename:
         abort(400, "No template selected")
 
-    path = os.path.join(filePath, filename)
-
-    if not os.path.isfile(path):
-        abort(404, "Template not found")
+    path = get_current_selected_template()
+    if not isinstance(path, str):
+        return path
 
     document = Document(path)
 
@@ -183,21 +194,19 @@ def get_current_doc_path():
 def get_current_selected_template():
 
     filename = session.get('selected_template')
-    filePath = session.get('selected_template_location')
-
-    if not filename or not filePath:
+    if not filename:
         abort(400, "No template selected")
 
-    path = os.path.join(filePath, filename)
+    if session['selected_template_location'] == app.config['UPLOAD_FOLDER']:
+        user_folder = get_user_upload_folder()
+        path = os.path.join(user_folder, filename)
+
+    if session['selected_template_location'] == app.config['TEMPLATE_FOLDER']:
+        path = os.path.join(app.config['TEMPLATE_FOLDER'], filename)
 
     if not os.path.isfile(path):
-        app.logger.error(f"Missing docx: {path}")
-        flash('Document file does not exist, try a different file')
-        return redirect(request.url)
-
-    if os.path.getsize(path) == 0:
-        flash('Document file is empty, try a different file')
-        return redirect(request.url)
+        flash('Stale template, please re-upload')
+        return redirect('/')        
 
     return path
 
@@ -221,7 +230,10 @@ def handle_upload(request):
 
                         # Save uploaded file temporarily and the path in session
                         fName = secure_filename(file.filename)
-                        path = os.path.join(app.config['UPLOAD_FOLDER'], fName)
+                        
+                        user_folder = get_user_upload_folder()
+                        path = os.path.join(user_folder, fName)
+
                         file.stream.seek(0)
                         file.save(path)
                         session['doc_path'] = path
@@ -380,7 +392,10 @@ def handle_fields(request):
             full_text.append(paragraph.text)
 
         fName = (template_name + ".docx")
-        upPath = os.path.join(app.config['UPLOAD_FOLDER'], fName)
+
+        user_folder = get_user_upload_folder()
+        upPath = os.path.join(user_folder, fName)
+        
         document.save(upPath)        
 
         if request.form.get('sub-action') == "save-local":
@@ -425,6 +440,9 @@ def handle_fields(request):
 
 def handle_download(field_values):
     selected_template = get_current_selected_template()
+    if not isinstance(selected_template, str):
+        return selected_template
+
     document = Document(selected_template)
     filename = field_values['docName'].strip()
 
@@ -450,6 +468,9 @@ def handle_download(field_values):
 
     temp_docx = save_docx_temp(document)
     pdf_file  = convert_docx_to_pdf(temp_docx)
+
+    if not pdf_file:
+        return "PDF conversion failed", 500
 
     # Clean up DOCX
     try:
@@ -517,7 +538,9 @@ def replace_placeholder_in_paragraph(paragraph, placeholder, replacement):
 
 def save_docx_temp(document):
     fName = secure_filename(str(uuid.uuid4()) + ".docx")
-    path = os.path.join(app.config['UPLOAD_FOLDER'], fName)
+
+    user_folder = get_user_upload_folder()
+    path = os.path.join(user_folder, fName)
 
     # Save the document to the filesystem
     document.save(path)
@@ -530,28 +553,66 @@ def convert_docx_to_pdf(docx_path, output_dir=None):
         output_dir = os.path.dirname(docx_path)
 
     # Call LibreOffice in headless mode
-    subprocess.run([
+    #subprocess.run([
+    #    libre_office,
+    #    "--headless",
+    #    "--convert-to", "pdf",
+    #    docx_path,
+    #    "--outdir", output_dir
+    #], check=True)
+
+    try:
+        subprocess.run([
         libre_office,
         "--headless",
+        "--nologo",
+        "--nolockcheck",
+        "--nodefault",
+        "--norestore",
+        "--nofirststartwizard",
         "--convert-to", "pdf",
         docx_path,
         "--outdir", output_dir
-    ], check=True)
+        ],
+        check=True,
+        timeout=30
+        )
+
+    except subprocess.TimeoutExpired:
+            subprocess.run(["pkill", "-f", "soffice"])
+            return None
+
+    except subprocess.CalledProcessError:
+            subprocess.run(["pkill", "-f", "soffice"])
+            return None
+
 
     # Construct PDF path
     base_name = os.path.splitext(os.path.basename(docx_path))[0]
     pdf_path = os.path.join(output_dir, f"{base_name}.pdf")
     return pdf_path
 
-def wipe_uploads_folder():
-    for filename in os.listdir(app.config['UPLOAD_FOLDER']): 
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename) 
-        try: 
-            if os.path.isfile(file_path): 
-                os.remove(file_path) 
-        except Exception as e:
-            app.logger.error(f"Failed to delete {file_path}: {e}")
+def cleanup_old_uploads(hours=2):
+    now = time.time()
+    cutoff = now - (hours * 3600)
 
+    for folder in os.listdir(app.config['UPLOAD_FOLDER']):
+        folder_path = os.path.join(app.config['UPLOAD_FOLDER'], folder)
+        try:
+            if os.path.isdir(folder_path):
+                # Check last modified of folder itself
+                if os.path.getmtime(folder_path) < cutoff:
+                    shutil.rmtree(folder_path)
+                    app.logger.info(f"Deleted old session folder: {folder_path}")
+                else:
+                    # Optional: clean files inside too, in case some were modified separately
+                    for file in os.listdir(folder_path):
+                        file_path = os.path.join(folder_path, file)
+                        if os.path.isfile(file_path) and os.path.getmtime(file_path) < cutoff:
+                            os.remove(file_path)
+                            app.logger.info(f"Deleted old file: {file_path}")
+        except Exception as e:
+            app.logger.error(f"Failed to delete {folder_path}: {e}")
 
 if __name__ == "__main__":
     app.run(debug=True)
