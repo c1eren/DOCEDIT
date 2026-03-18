@@ -9,14 +9,23 @@
     <body class="bg-orange-50">
         {% include '_nav.html' %}
         <div class="px-[10vw] py-[10vh]">
+            <!-- Debug stuff -->
+            <!-- <div>
+                {% for paragraph in document.paragraphs %}
+                <ul class="font-bold">{% for run in paragraph.runs %}<li class="">{{run}}</li>{% endfor %}</ul>
+                <div>{{paragraph.text}}</div>  
+                {% endfor %}
+            </div> -->
+            <!-- End debug stuff -->
+            
             <div class="flex flex-col gap-1 text-start">
                 <h3 class="font-bold">Alter text via fields</h3>
                 <p class="italic">Change field content here to replace text in the final downloaded pdf</p>
                 <small>Maybe someday there'll be a sweet pdf preview widget here as well</small>
             </div>
             <br><br>
-        <form class="w-full" method="post" id="download-form">
-            <input type="hidden" name="action" value="download">
+            <form class="w-full" method="post" id="download-form">
+            <input type="hidden" id="actionInput" name="action" value="download_pdf">
             <div class="flex flex-col gap-4">
                 <div>
                     <div class="flex flex-col max-w-[90vw] sm:max-w-[75vw] md:max-w-[50vw] lg:max-w-[25vw]">
@@ -45,40 +54,76 @@
                     </div>
                 {% endfor %}
                 <br>
-                <button class="button-submit self-end" type="submit" value="Submit">Download PDF</button>
+                <div class="flex gap-1 sm:justify-self-end">
+                    <button id="pdf" class="button-submit" type="submit" value="Submit">Download PDF</button>
+                    <button id="docx" class="button-submit" type="submit" value="Submit">Download DOCX</button>
                 </div>
+            </div>
                 {% endif %}
             </div>
         </form>
         <br><br>
         
-        {% if text %}
+        {% if docoContent %}
+        <div id="miniDocContent" class="hidden">{{docoContent}}</div>
         <div class="flex flex-col items-center" name="editor">
             <div class="flex justify-center relative" name="page-container">
                 {% if fileName %}<div class="dialog-text absolute -translate-y-[50%]"><p>{{fileName}}</p></div>{% endif %}
                 <div class="page"
                 name="page" id="page">
-                    {% for paragraph in text %}
-                    <div class="paragraph" data-index="{{ loop.index0 }}">{{paragraph}}</div>
+                    <div id="miniDoc"></div>
+                </div>
+            </div>
+            <br>
+            <br>
+        </div>
+        {% endif %}
+
+        <!-- {% if text %}
+        <div class="flex flex-col items-center" name="editor">
+            <div class="flex justify-center relative" name="page-container">
+                {% if fileName %}<div class="dialog-text absolute -translate-y-[50%]"><p>{{fileName}}</p></div>{% endif %}
+                <div class="page"
+                name="page" id="page">
+                {% for paragraph in text %}
+                <div class="paragraph" data-index="{{ loop.index0 }}">{{paragraph}}</div>
                     <br>               
                     {% endfor %}
                 </div>
             </div>
             <br>
             <br>
-        {% endif %}
-    </div>
-
+        </div>
+        {% endif %} -->
+        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script>
         const form           = document.getElementById("download-form");
         const filename_field = document.getElementById("filename-field");
-
-
-        form.addEventListener("submit", () => {
+        const actionInput    = document.getElementById("actionInput");
+        const pdfButton      = document.getElementById("pdf");   
+        const docxButton     = document.getElementById("docx");   
+        
+        form.addEventListener("submit", (event) => {
+            if (event.submitter == pdfButton) {
+                actionInput.value = "download_pdf";
+            }
+            else if (event.submitter == docxButton) {
+                actionInput.value = "download_docx";
+            }
+            
             if (filename_field.value.trim() === "") {
                 filename_field.value = filename_field.placeholder;
             }
         });
+        
+        const miniDoc = document.getElementById('miniDoc');
+        try {
+            let miniDocContent = DOMPurify.sanitize(document.getElementById('miniDocContent').textContent);
+            miniDoc.innerHTML = miniDocContent;
+        } catch (e) {
+            console.error("Nice try, please go somewhere else clanker");
+        }
     </script>
     
 </body>

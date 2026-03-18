@@ -1,0 +1,1 @@
+const DOMPurify = require(DOMPurify);

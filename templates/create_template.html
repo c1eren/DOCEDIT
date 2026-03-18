@@ -63,10 +63,14 @@
                 {% if fileName %}<div class="dialog-text absolute -translate-y-[50%]"><p>{{fileName}}</p></div>{% endif %}
                 <div class="page"
                 name="page" id="page">
-                    {% for paragraph in text %}
+                    <!-- {% for paragraph in text %}
                     <div class="paragraph" data-index="{{ loop.index0 }}">{{paragraph}}</div>
                     <br>               
-                    {% endfor %}
+                    {% endfor %} -->
+                    {% if docoContent %}
+                        <div id="miniDocContent" class="hidden">{{docoContent}}</div>
+                        <div id="miniDoc"></div>
+                    {% endif %}
                 </div>
             </div>
             <br>
@@ -146,6 +150,7 @@
         </div>
     </template>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 <script>
     let mouseInPage;
     let selected;
@@ -296,6 +301,14 @@
 
         const endOffset = startOffset + normSel.length;
         return { start: startOffset, end: endOffset };
+    }
+
+    const miniDoc = document.getElementById('miniDoc');
+    try {
+        let miniDocContent = DOMPurify.sanitize(document.getElementById('miniDocContent').textContent);
+        miniDoc.innerHTML = miniDocContent;
+    } catch (e) {
+        console.error("Nice try, please go somewhere else clanker");
     }
     
 </script>

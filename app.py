@@ -11,6 +11,13 @@ from docx import Document
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
+# For better looking previews
+from docx_parser_converter import docx_to_html, ConversionConfig
+config = ConversionConfig(
+    # HTML-specific options
+    fragment_only=True,           # Output just content without HTML wrapper
+)
+
 app = Flask(__name__)
 
 load_dotenv()
@@ -111,7 +118,7 @@ def create_pdf_page():
         action = request.form.get('action')
 
         ## Handle if download button is clicked ## 
-        if action == 'download':
+        if action == 'download_pdf':
             # All submitted fields
             form_data = request.form.to_dict()
 
@@ -119,7 +126,17 @@ def create_pdf_page():
             form_data.pop('action', None)
             form_data.pop('download', None)
 
-            return handle_download(form_data)
+            return handle_download(form_data, "pdf")
+        
+        if action == 'download_docx':
+            # All submitted fields
+            form_data = request.form.to_dict()
+
+            # Remove non-field keys (like the document title etc.)
+            form_data.pop('action', None)
+            form_data.pop('download', None)
+
+            return handle_download(form_data, "docx")
 
     ## Create the download from template page ##    
     
@@ -152,7 +169,9 @@ def create_pdf_page():
 
             start = text.find("[--", end + 3)
     
-    return render_template('create_new_pdf.html', text=full_text, fileName=filename, fields=fieldArr)
+    html_content = docx_to_html(path, config=config)
+
+    return render_template('create_new_pdf.html', text=full_text, fileName=filename, fields=fieldArr, document=document, docoContent=html_content)
 
 @app.route('/create-template', methods=['GET', 'POST'])
 def create_template_page():
@@ -243,7 +262,9 @@ def handle_upload(request):
                         for paragraph in document.paragraphs:
                             full_text.append(paragraph.text)
 
-                        return render_template('create_template.html', text=full_text, fileName=file.filename, allowed_extensions=ALLOWED_EXTENSIONS)
+                        html_content = docx_to_html(path, config=config)
+
+                        return render_template('create_template.html', text=full_text, fileName=file.filename, allowed_extensions=ALLOWED_EXTENSIONS, docoContent=html_content)
                     else:
                         flash('Accepted filetypes: ' + str(ALLOWED_EXTENSIONS).strip('}{'))
                         return redirect(request.url)
@@ -413,12 +434,12 @@ def handle_fields(request):
                 mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
             
-        if request.form.get('sub-action') == "create":
-            file_stream = BytesIO()
-            with open(upPath, "rb") as f:
-                file_stream.write(f.read())
-            path = os.path.join(app.config['TEMPLATE_FOLDER'], fName)
-            document.save(path)            
+        # if request.form.get('sub-action') == "create":
+        #     file_stream = BytesIO()
+        #     with open(upPath, "rb") as f:
+        #         file_stream.write(f.read())
+        #     path = os.path.join(app.config['TEMPLATE_FOLDER'], fName)
+        #     document.save(path)            
 
         # Save the new template to the template folder (for now, upgrade to db storage in future potentially)
         # fName = secure_filename(template_name + ".docx")
@@ -438,7 +459,11 @@ def handle_fields(request):
         flash("An unexpected error occurred. Please try again.")
         return redirect(request.url)
 
-def handle_download(field_values):
+def handle_download(field_values, filetype="pdf"):
+    ret       = None
+    temp_docx = None
+    pdf_file  = None
+
     selected_template = get_current_selected_template()
     if not isinstance(selected_template, str):
         return selected_template
@@ -446,56 +471,88 @@ def handle_download(field_values):
     document = Document(selected_template)
     filename = field_values['docName'].strip()
 
+    # This is to replace any keys in the filename eg. [-- business_name --] with "Company Ltd"
+    # To note: if the value to replace has a '.' in it, the rest of the filename will be lobbed off in the next loop
     for key, value in field_values.items():
         if key in filename:
             fValue = "".join(str(value).split())
             filename = filename.replace(str(key), fValue)
 
-    # To note: if the value to replace has a '.' in it, the rest of the filename will be lobbed off in the next loop
-
-    endFname = filename.find('.')
-    if endFname != -1:
-        if len(filename[:endFname].strip()) == 0:
-            filename = "newfile.pdf"
-        else:
-            filename = filename[:endFname] + ".pdf"
-    else:
-        filename += ".pdf"
-
     for paragraph in document.paragraphs:
         for key, value in field_values.items():
             replace_placeholder_in_paragraph(paragraph, key, value.strip())
 
-    temp_docx = save_docx_temp(document)
-    pdf_file  = convert_docx_to_pdf(temp_docx)
+    if (filetype == "docx"):
+        filename = define_filename(filename, "docx")
 
-    if not pdf_file:
-        return "PDF conversion failed", 500
+        file_stream = BytesIO()
+        document.save(file_stream)
+        file_stream.seek(0)
+
+        if not file_stream:
+            return "DOCX conversion failed", 500
+
+        # Download it
+        ret = send_file(
+            file_stream,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+    elif (filetype == "pdf"):
+        filename = define_filename(filename, "pdf")
+
+        temp_docx = save_docx_temp(document)
+        pdf_file  = convert_docx_to_pdf(temp_docx)
+
+        if not pdf_file:
+            return "PDF conversion failed", 500
+        
+        # Need to write to file-like object so we can clean up pdf before returning from this function
+        pdf_bytes = BytesIO()
+        with open(pdf_file, "rb") as f:
+            pdf_bytes.write(f.read())
+        pdf_bytes.seek(0)
+        
+        # Download it
+        ret = send_file(
+            pdf_bytes,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/pdf"
+        )
 
     # Clean up DOCX
-    try:
-        os.remove(temp_docx)
-    except Exception as e:
-        app.logger.error(f"Failed to remove temp DOCX: {e}")
-
-    pdf_bytes = BytesIO()
-    with open(pdf_file, "rb") as f:
-        pdf_bytes.write(f.read())
-    pdf_bytes.seek(0)
+    if temp_docx:
+        if os.path.exists(temp_docx):
+            try:
+                os.remove(temp_docx)
+            except Exception as e:
+                app.logger.error(f"Failed to remove temp DOCX: {e}")
 
     # Clean up PDF
-    try:
-        os.remove(pdf_file)
-    except Exception as e:
-        app.logger.error(f"Failed to remove temp PDF: {e}")
+    if pdf_file:
+        if os.path.exists(pdf_file):
+            try:
+                os.remove(pdf_file)
+            except Exception as e:
+                app.logger.error(f"Failed to remove temp PDF: {e}")
 
-    return send_file(
-        pdf_bytes,
-        as_attachment=True,
-        download_name=filename,
-        mimetype="application/pdf"
-    )
+    return ret
 
+def define_filename(fName=" ", type="pdf"):
+    endFname = fName.find('.')
+    if endFname != -1:
+        if len(fName[:endFname].strip()) == 0:
+            fName = f"newfile.{type}"
+        else:
+            fName = f"{fName[:endFname]}.{type}"
+    else:
+        fName += f".{type}"
+    
+    return fName
+    
 def replace_placeholder_in_paragraph(paragraph, placeholder, replacement):
     while True:
         flat = ""
