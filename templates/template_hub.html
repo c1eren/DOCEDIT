@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="./static/output.css" rel="stylesheet">
+    <link rel="icon" href="./static/res/DOCEDIT_favicon.png" type="image/png">
     <title>DOCEDIT | Template Hub</title>
 </head>
 <body class="bg-orange-50">
@@ -74,13 +75,13 @@
                         {% endfor %}
                     {% endif %}
                 </form>
+                <br></br>
+                <a style="all:unset" href="{{ url_for('create_template_page') }}">
+                    <div class="button-submit w-fit justify-self-center">
+                        <h3>Create new template</h3>
+                    </div>
+                </a>
             </div>
-            <br><br>
-            <a style="all:unset" href="{{ url_for('create_template_page') }}">
-                <div class="button-submit">
-                    <h3>Create new template</h3>
-                </div>
-            </a>
             </div>
         </div>
 
