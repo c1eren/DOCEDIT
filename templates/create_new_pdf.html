@@ -4,7 +4,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="./static/output.css" rel="stylesheet">
-        <title>DOCEDIT | Create Template</title>
+        <link rel="icon" href="./static/res/DOCEDIT_favicon.png" type="image/png">
+        <title>DOCEDIT | Generate Document</title>
     </head>
     <body class="bg-orange-50">
         {% include '_nav.html' %}
@@ -20,8 +21,7 @@
             
             <div class="flex flex-col gap-1 text-start">
                 <h3 class="font-bold">Alter text via fields</h3>
-                <p class="italic">Change field content here to replace text in the final downloaded pdf</p>
-                <small>Maybe someday there'll be a sweet pdf preview widget here as well</small>
+                <p class="italic">Change field content here to replace text in the final downloaded document</p>
             </div>
             <br><br>
             <form class="w-full" method="post" id="download-form">
@@ -30,28 +30,24 @@
                 <div>
                     <div class="flex flex-col max-w-[90vw] sm:max-w-[75vw] md:max-w-[50vw] lg:max-w-[25vw]">
                         <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit" for="filename-field">Edit filename (optional)</label>
-                        <input id="filename-field" name="docName" class="dialog-text shadow-none" placeholder="{{fileName.replace('.docx', '.pdf')}}" value="{{fileName.replace('.docx', '.pdf')}}">
+                        <input id="filename-field" name="docName" class="dialog-text shadow-none max-w-[90vw] sm:w-[50vw]" placeholder="{{fileName.replace('.docx', '.pdf')}}" value="{{fileName.replace('.docx', '.pdf')}}">
                         <small class="
-                        px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit text-end
+                        px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit 
                         ">Copy key into filename to replace ex: <span class="italic text-nowrap text-emerald-500 active:text-emerald-400 hover:text-emerald-700 ">new_pdf_for_[-- key --]_2026.pdf</span></small>
                     </div>
                 </div>
                 <br>
                 {% if fields %}
-                <div class="sm:grid gap-4 items-start justify-start self-center
+                <div class="sm:grid sm:grid-cols-[1fr_2fr]  flex flex-col gap-4 self-center
                 p-[clamp(1rem,5vw,4rem)] rounded-md ring-2
-                max-w-[90vw] w-full sm:w-fit
+                max-w-[90vw] w-full 
                 ring-emerald-500 hover:ring-emerald-400 active:ring-emerald-700 shadow-sm 
                 ">
                 {% for field in fields %}
-                    <div class="flex flex-col 
-                    sm:grid sm:grid-cols-[1fr_2fr] 
-                    md:grid-cols-[1fr_3fr] 
-                    lg:grid-cols-[1fr_4fr] 
-                    gap-2 ">
-                        <label class="px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit sm:text-end text-nowrap" for="field-{{ loop.index0 }}">{{field}}</label>
-                        <textarea id="field-{{ loop.index0 }}" name="{{field}}" class="dialog-text field-sizing-content text-nowrap" placeholder="{{field}}" required></textarea>
-                    </div>
+
+                        <label class="sm:col-start-1 sm:col-span-1 w-full px-[clamp(0.5rem,0.5vw,2rem)] py-[clamp(0.25rem,0.25vw,0.5rem)] h-fit sm:text-end" for="field-{{ loop.index0 }}">{{field}}</label>
+                        <textarea id="sm:col-start-2 sm:col-span-1 w-full field-{{ loop.index0 }}" name="{{field}}" class="dialog-text field-sizing-content" placeholder="{{field}}" required></textarea>
+                    
                 {% endfor %}
                 <br>
                 <div class="flex gap-1 sm:justify-self-end">
